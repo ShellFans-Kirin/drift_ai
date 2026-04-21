@@ -1,8 +1,8 @@
-# PromptKeep
+# drift_ai
 
 > Local-first CLI to capture, compact, and bind AI coding sessions to your git history.
 
-`promptkeep` watches the local session logs of your AI coding agents (Claude
+`drift` watches the local session logs of your AI coding agents (Claude
 Code, Codex, Aider...), runs an LLM-driven compaction over each completed
 session, stores the result in `.prompts/` inside your git repo, and binds it
 to the matching commit via `git notes`.
@@ -14,6 +14,9 @@ commit abc1234 — Add OAuth login
    [claude-code] 7 turns, decided NextAuth over manual JWT
    [codex]      3 turns, fixed callback URL edge case
 ```
+
+The name reflects the problem: prompts and the code they produce **drift**
+apart unless something binds them. `drift_ai` keeps them stitched together.
 
 ## Status
 
