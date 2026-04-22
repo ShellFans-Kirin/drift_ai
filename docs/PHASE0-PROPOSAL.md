@@ -39,7 +39,7 @@ This proposal is the only checkpoint where bootstrap stops for human review.
 | `python3` | 3.12.3 | OK |
 | `rustc` / `cargo` | 1.75.0 | Installed in Phase 0 |
 | `go` | 1.22.2 | Installed in Phase 0 |
-| `claude` | 2.1.116 | OK |
+| `claude` | 2.1.117 | OK |
 | `codex` | codex-cli 0.122.0 | OK; sandbox blocked by missing bubblewrap permissions on this host (writes through `apply_patch` fail at execution, but the intent is fully captured in the rollout JSONL) |
 | `git config` | empty originally | Set to `kirin / kirin@shell.fans` in Phase 0 |
 | `ANTHROPIC_API_KEY` | **not set** | **[NEEDS-INPUT]** for Phase 3 real-API smoke; Mock works for tests |

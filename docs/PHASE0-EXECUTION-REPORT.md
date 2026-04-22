@@ -29,7 +29,7 @@
 | `python3` | 3.12.3 | OK |
 | `rustc` / `cargo` | 1.75.0 | Installed during Phase 0 |
 | `go` | 1.22.2 | Installed during Phase 0 |
-| `claude` (Claude Code) | 2.1.116 | OK |
+| `claude` (Claude Code) | 2.1.117 | OK |
 | `codex` (Codex CLI) | codex-cli 0.122.0 | OK; sandbox writes blocked by missing bubblewrap permissions on this host |
 | `git config user.name / user.email` | empty originally | Set to `kirin / kirin@shell.fans` during Phase 0 |
 | `ANTHROPIC_API_KEY` | **not set** | [NEEDS-INPUT] — only blocks Phase 3 real-API smoke |
