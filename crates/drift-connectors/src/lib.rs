@@ -37,7 +37,9 @@ pub trait SessionConnector {
 pub fn default_connectors() -> Vec<Box<dyn SessionConnector>> {
     let mut v: Vec<Box<dyn SessionConnector>> = Vec::new();
     #[cfg(feature = "claude-code")]
-    v.push(Box::new(claude_code::ClaudeCodeConnector::with_default_root()));
+    v.push(Box::new(
+        claude_code::ClaudeCodeConnector::with_default_root(),
+    ));
     #[cfg(feature = "codex")]
     v.push(Box::new(codex::CodexConnector::with_default_root()));
     #[cfg(feature = "aider")]

@@ -188,9 +188,9 @@ impl EventStore {
 
     /// Events on a given file, oldest → newest.
     pub fn events_for_file(&self, file_path: &str) -> Result<Vec<CodeEvent>> {
-        let mut stmt = self.conn.prepare(
-            r#"SELECT * FROM code_events WHERE file_path = ?1 ORDER BY timestamp ASC"#,
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare(r#"SELECT * FROM code_events WHERE file_path = ?1 ORDER BY timestamp ASC"#)?;
         let rows = stmt.query_map([file_path], row_to_event)?;
         let mut out = Vec::new();
         for r in rows {
@@ -201,9 +201,9 @@ impl EventStore {
 
     /// Events produced by a session, oldest → newest.
     pub fn events_for_session(&self, session_id: &str) -> Result<Vec<CodeEvent>> {
-        let mut stmt = self.conn.prepare(
-            r#"SELECT * FROM code_events WHERE session_id = ?1 ORDER BY timestamp ASC"#,
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare(r#"SELECT * FROM code_events WHERE session_id = ?1 ORDER BY timestamp ASC"#)?;
         let rows = stmt.query_map([session_id], row_to_event)?;
         let mut out = Vec::new();
         for r in rows {
@@ -269,20 +269,17 @@ impl EventStore {
                WHERE started_at >= ?1 AND ended_at <= ?2
                ORDER BY started_at ASC"#,
         )?;
-        let rows = stmt.query_map(
-            params![start.to_rfc3339(), end.to_rfc3339()],
-            |r| {
-                Ok(SessionRow {
-                    session_id: r.get(0)?,
-                    agent_slug: AgentSlug::parse(&r.get::<_, String>(1)?),
-                    model: r.get::<_, Option<String>>(2)?,
-                    started_at: parse_ts(&r.get::<_, String>(3)?),
-                    ended_at: parse_ts(&r.get::<_, String>(4)?),
-                    turn_count: r.get::<_, i64>(5)? as u32,
-                    summary: r.get(6)?,
-                })
-            },
-        )?;
+        let rows = stmt.query_map(params![start.to_rfc3339(), end.to_rfc3339()], |r| {
+            Ok(SessionRow {
+                session_id: r.get(0)?,
+                agent_slug: AgentSlug::parse(&r.get::<_, String>(1)?),
+                model: r.get::<_, Option<String>>(2)?,
+                started_at: parse_ts(&r.get::<_, String>(3)?),
+                ended_at: parse_ts(&r.get::<_, String>(4)?),
+                turn_count: r.get::<_, i64>(5)? as u32,
+                summary: r.get(6)?,
+            })
+        })?;
         let mut out = Vec::new();
         for r in rows {
             out.push(r?);

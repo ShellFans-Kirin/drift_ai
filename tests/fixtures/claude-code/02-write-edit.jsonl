@@ -1,0 +1,5 @@
+{"type":"user","uuid":"u1","timestamp":"2026-04-20T11:00:00Z","sessionId":"fix-02","cwd":"/tmp/proj","message":{"role":"user","content":"make hi.txt with hello, then add drift"}}
+{"type":"assistant","uuid":"u2","timestamp":"2026-04-20T11:00:01Z","sessionId":"fix-02","cwd":"/tmp/proj","message":{"role":"assistant","content":[{"type":"tool_use","id":"tc1","name":"Write","input":{"file_path":"hi.txt","content":"hello\n"}}]}}
+{"type":"user","uuid":"u3","timestamp":"2026-04-20T11:00:02Z","sessionId":"fix-02","cwd":"/tmp/proj","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tc1","is_error":false,"content":"ok"}]}}
+{"type":"assistant","uuid":"u4","timestamp":"2026-04-20T11:00:03Z","sessionId":"fix-02","cwd":"/tmp/proj","message":{"role":"assistant","content":[{"type":"tool_use","id":"tc2","name":"Edit","input":{"file_path":"hi.txt","old_string":"hello","new_string":"hello\ndrift","replace_all":false}}]}}
+{"type":"user","uuid":"u5","timestamp":"2026-04-20T11:00:04Z","sessionId":"fix-02","cwd":"/tmp/proj","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tc2","is_error":false,"content":"ok"}]}}

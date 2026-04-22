@@ -1,9 +1,9 @@
 use super::{open_store, sessions_dir};
 use anyhow::{Context, Result};
 use chrono::DateTime;
+use drift_connectors::default_connectors;
 use drift_core::attribution::commit_drafts;
 use drift_core::compaction::{summary_to_markdown, CompactionProvider, MockProvider};
-use drift_connectors::default_connectors;
 use std::path::Path;
 
 pub fn run(
@@ -67,7 +67,10 @@ pub fn run(
                 &ns.session_id,
                 ns.agent_slug,
                 ns.model.as_deref(),
-                ns.working_dir.as_ref().map(|p| p.to_string_lossy().to_string()).as_deref(),
+                ns.working_dir
+                    .as_ref()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .as_deref(),
                 ns.started_at,
                 ns.ended_at,
                 ns.turns.len() as u32,

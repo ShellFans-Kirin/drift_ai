@@ -121,7 +121,7 @@ impl CompactionProvider for AnthropicProvider {
 }
 
 fn render_prompt(session: &NormalizedSession) -> Result<String> {
-    let template = include_str!("../../../templates/compaction.md");
+    let template = include_str!("../templates/compaction.md");
     let transcript = session
         .turns
         .iter()
@@ -151,7 +151,13 @@ fn short(id: &str) -> &str {
 /// frontmatter suitable for committing under `.prompts/sessions/`.
 pub fn summary_to_markdown(s: &CompactedSummary) -> String {
     let frontmatter = serde_yaml_like(s);
-    format!("---\n{}---\n\n# {} — {}\n\n{}\n", frontmatter, s.session_id, s.agent_slug.as_str(), s.summary)
+    format!(
+        "---\n{}---\n\n# {} — {}\n\n{}\n",
+        frontmatter,
+        s.session_id,
+        s.agent_slug.as_str(),
+        s.summary
+    )
 }
 
 fn serde_yaml_like(s: &CompactedSummary) -> String {
@@ -160,7 +166,10 @@ fn serde_yaml_like(s: &CompactedSummary) -> String {
     // which is a YAML-compatible subset for scalars.
     let mut out = String::new();
     out.push_str(&format!("session_id: {}\n", json_scalar(&s.session_id)));
-    out.push_str(&format!("agent_slug: {}\n", json_scalar(s.agent_slug.as_str())));
+    out.push_str(&format!(
+        "agent_slug: {}\n",
+        json_scalar(s.agent_slug.as_str())
+    ));
     if let Some(m) = &s.model {
         out.push_str(&format!("model: {}\n", json_scalar(m)));
     }

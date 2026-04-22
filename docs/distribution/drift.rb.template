@@ -1,0 +1,53 @@
+# Homebrew Formula template for drift_ai.
+#
+# Publish steps (manual, per v0.1.0 plan):
+# 1. Create the tap repo:
+#      gh repo create shellfans-dev/homebrew-drift --public \
+#        --description "Homebrew tap for drift_ai (AI-native blame CLI)" \
+#        --license "Apache-2.0"
+# 2. In the tap repo, create a `Formula/` directory and copy this file into
+#    `Formula/drift.rb`, then substitute every `<FILL-IN-...>` placeholder
+#    with the values from the v0.1.0 release artefacts.
+# 3. Commit + push. Users then install via:
+#      brew tap shellfans-dev/drift
+#      brew install drift
+# 4. For each new release, regenerate the sha256 lines (see
+#    docs/STEP1-5-COMPLETION-REPORT.md §Install §Homebrew).
+
+class Drift < Formula
+  desc "Local-first CLI that captures, compacts, and binds AI coding sessions to git"
+  homepage "https://github.com/shellfans-dev/drift_ai"
+  version "<FILL-IN-VERSION>"           # e.g. "0.1.0"
+  license "Apache-2.0"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/shellfans-dev/drift_ai/releases/download/v#{version}/drift-v#{version}-aarch64-apple-darwin.tar.gz"
+      sha256 "<FILL-IN-SHA256-MACOS-ARM64>"
+    end
+    on_intel do
+      url "https://github.com/shellfans-dev/drift_ai/releases/download/v#{version}/drift-v#{version}-x86_64-apple-darwin.tar.gz"
+      sha256 "<FILL-IN-SHA256-MACOS-X86_64>"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/shellfans-dev/drift_ai/releases/download/v#{version}/drift-v#{version}-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "<FILL-IN-SHA256-LINUX-ARM64>"
+    end
+    on_intel do
+      url "https://github.com/shellfans-dev/drift_ai/releases/download/v#{version}/drift-v#{version}-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "<FILL-IN-SHA256-LINUX-X86_64>"
+    end
+  end
+
+  def install
+    bin.install "drift"
+    doc.install "README.md", "LICENSE", "CHANGELOG.md"
+  end
+
+  test do
+    assert_match "drift", shell_output("#{bin}/drift --version")
+  end
+end

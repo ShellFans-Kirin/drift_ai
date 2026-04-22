@@ -32,7 +32,7 @@ pub fn list(repo: &Path) -> Result<()> {
     Ok(())
 }
 
-fn walk<'a>(v: &'a serde_json::Value, key: &str) -> Option<String> {
+fn walk(v: &serde_json::Value, key: &str) -> Option<String> {
     let mut cur = v;
     for part in key.split('.') {
         cur = cur.get(part)?;

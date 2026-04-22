@@ -1,0 +1,27 @@
+{
+  "name": "drift",
+  "displayName": "Drift AI — blame & trace",
+  "version": "0.1.0",
+  "description": "Reverse lookup a line of code to its originating AI prompt, and trace a session's produced events. Read-only queries over the local Drift AI store.",
+  "homepage": "https://github.com/shellfans-dev/drift_ai",
+  "license": "Apache-2.0",
+  "mcpServers": {
+    "drift": {
+      "command": "drift",
+      "args": ["mcp"],
+      "description": "Drift AI stdio MCP server. Tools: drift_blame, drift_trace, drift_rejected, drift_log, drift_show_event."
+    }
+  },
+  "commands": [
+    {
+      "name": "drift:blame",
+      "description": "Show the AI+human timeline for a file (optionally for a single line or range).",
+      "prompt": "Use the drift_blame MCP tool to show the full timeline of CodeEvents for {{file}}{{#if line}} at line {{line}}{{/if}}. Summarise the multi-agent history in 5 bullet points or fewer."
+    },
+    {
+      "name": "drift:trace",
+      "description": "Show every CodeEvent a given session produced.",
+      "prompt": "Call the drift_trace MCP tool with session_id={{session_id}} and summarise: files touched, key decisions, accepted vs rejected events."
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+{"timestamp":"2026-04-20T12:00:00Z","type":"session_meta","payload":{"id":"019daed0-codex-fix-03","model":"gpt-5"}}
+{"timestamp":"2026-04-20T12:00:01Z","type":"response_item","payload":{"type":"custom_tool_call","turn_id":"t1","call_id":"c1","name":"apply_patch","input":"*** Begin Patch\n*** Move File: old.rs -> new.rs\n*** End Patch\n"}}

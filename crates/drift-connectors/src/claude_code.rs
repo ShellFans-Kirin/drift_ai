@@ -7,7 +7,9 @@ use super::{SessionConnector, SessionRef};
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Utc};
 use drift_core::attribution::CodeEventDraft;
-use drift_core::model::{AgentSlug, NormalizedSession, Operation, Role, ToolCall, ToolResult, Turn};
+use drift_core::model::{
+    AgentSlug, NormalizedSession, Operation, Role, ToolCall, ToolResult, Turn,
+};
 use drift_core::shell_lexer::{detect_intents, ShellIntent};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -71,8 +73,7 @@ fn walk_jsonls(dir: &Path, out: &mut Vec<SessionRef>, slug: &'static str) {
 }
 
 fn parse_file(path: &Path) -> Result<NormalizedSession> {
-    let text =
-        std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    let text = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut turns: Vec<Turn> = Vec::new();
     let mut session_id = String::new();
     let mut started_at: Option<DateTime<Utc>> = None;
@@ -147,8 +148,7 @@ fn parse_file(path: &Path) -> Result<NormalizedSession> {
                         Value::String(s) => text_content.push_str(s),
                         Value::Array(blocks) => {
                             for b in blocks {
-                                let btype =
-                                    b.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                                let btype = b.get("type").and_then(|t| t.as_str()).unwrap_or("");
                                 match btype {
                                     "text" => {
                                         if let Some(t) = b.get("text").and_then(|t| t.as_str()) {

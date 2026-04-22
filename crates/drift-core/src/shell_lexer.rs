@@ -74,7 +74,8 @@ fn detect_one(s: &str) -> Vec<ShellIntent> {
     let mut out = Vec::new();
 
     // mv / git mv
-    let is_mv = toks[0] == "mv" || (toks[0] == "git" && toks.get(1).map(|s| s.as_str()) == Some("mv"));
+    let is_mv =
+        toks[0] == "mv" || (toks[0] == "git" && toks.get(1).map(|s| s.as_str()) == Some("mv"));
     if is_mv {
         let args: Vec<&str> = toks
             .iter()
@@ -159,10 +160,7 @@ fn detect_one(s: &str) -> Vec<ShellIntent> {
 fn extract_python_open_write(script: &str) -> Option<String> {
     // Very tight: match open("path", "w"...) or open('path', 'w'...).
     // False negatives are OK (SHA ladder catches it); false positives are not.
-    let patterns = [
-        ("open(\"", '"'),
-        ("open('", '\''),
-    ];
+    let patterns = [("open(\"", '"'), ("open('", '\'')];
     for (prefix, end) in patterns {
         if let Some(i) = script.find(prefix) {
             let tail = &script[i + prefix.len()..];
@@ -265,7 +263,12 @@ mod tests {
     #[test]
     fn detects_rm() {
         let ints = detect_intents("rm -rf dist");
-        assert_eq!(ints, vec![ShellIntent::Remove { path: "dist".into() }]);
+        assert_eq!(
+            ints,
+            vec![ShellIntent::Remove {
+                path: "dist".into()
+            }]
+        );
     }
 
     #[test]

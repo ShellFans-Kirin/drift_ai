@@ -31,8 +31,7 @@ pub fn sessions_dir(repo: &Path) -> PathBuf {
 pub fn open_store(repo: &Path) -> Result<EventStore> {
     let p = events_db_path(repo);
     if let Some(parent) = p.parent() {
-        std::fs::create_dir_all(parent)
-            .with_context(|| format!("create {}", parent.display()))?;
+        std::fs::create_dir_all(parent).with_context(|| format!("create {}", parent.display()))?;
     }
     EventStore::open(&p)
 }

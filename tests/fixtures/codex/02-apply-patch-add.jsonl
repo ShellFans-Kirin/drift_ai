@@ -1,0 +1,3 @@
+{"timestamp":"2026-04-20T11:00:00Z","type":"session_meta","payload":{"id":"019daed0-codex-fix-02","model":"gpt-5"}}
+{"timestamp":"2026-04-20T11:00:01Z","type":"response_item","payload":{"type":"custom_tool_call","turn_id":"t1","call_id":"c1","name":"apply_patch","input":"*** Begin Patch\n*** Add File: hi.txt\n+hello\n+drift\n*** End Patch\n"}}
+{"timestamp":"2026-04-20T11:00:02Z","type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"c1","status":"completed","output":"ok"}}

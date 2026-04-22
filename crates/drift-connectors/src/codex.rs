@@ -8,7 +8,9 @@ use super::{SessionConnector, SessionRef};
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Utc};
 use drift_core::attribution::CodeEventDraft;
-use drift_core::model::{AgentSlug, NormalizedSession, Operation, Role, ToolCall, ToolResult, Turn};
+use drift_core::model::{
+    AgentSlug, NormalizedSession, Operation, Role, ToolCall, ToolResult, Turn,
+};
 use drift_core::shell_lexer::{detect_intents, ShellIntent};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -72,8 +74,7 @@ fn walk(dir: &Path, out: &mut Vec<SessionRef>, slug: &'static str) {
 }
 
 fn parse_file(path: &Path) -> Result<NormalizedSession> {
-    let text =
-        std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    let text = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut turns: Vec<Turn> = Vec::new();
     let mut session_id: Option<String> = None;
     let mut started_at: Option<DateTime<Utc>> = None;
@@ -166,7 +167,9 @@ fn parse_file(path: &Path) -> Result<NormalizedSession> {
                                 .get("arguments")
                                 .and_then(|a| a.as_str())
                                 .and_then(|s| serde_json::from_str::<Value>(s).ok())
-                                .unwrap_or_else(|| payload.get("arguments").cloned().unwrap_or(Value::Null))
+                                .unwrap_or_else(|| {
+                                    payload.get("arguments").cloned().unwrap_or(Value::Null)
+                                })
                         } else {
                             payload
                                 .get("input")
@@ -219,11 +222,7 @@ fn parse_file(path: &Path) -> Result<NormalizedSession> {
     }
 
     let sid = session_id
-        .or_else(|| {
-            path.file_stem()
-                .and_then(|s| s.to_str())
-                .map(String::from)
-        })
+        .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(String::from))
         .ok_or_else(|| anyhow!("no session id in {}", path.display()))?;
 
     let now = Utc::now();
@@ -311,10 +310,7 @@ fn extract_events(ns: &NormalizedSession) -> Result<Vec<CodeEventDraft>> {
                             files.remove(&hunk.path);
                         }
                         let mut md = serde_json::Map::new();
-                        md.insert(
-                            "source".into(),
-                            Value::String("apply_patch".into()),
-                        );
+                        md.insert("source".into(), Value::String("apply_patch".into()));
                         drafts.push(CodeEventDraft {
                             session_id: Some(ns.session_id.clone()),
                             agent_slug: AgentSlug::Codex,
@@ -501,10 +497,7 @@ fn shell_intent_to_draft(
     intent: ShellIntent,
 ) -> Option<CodeEventDraft> {
     let mut md = serde_json::Map::new();
-    md.insert(
-        "detected_via".into(),
-        Value::String("shell-lexer".into()),
-    );
+    md.insert("detected_via".into(), Value::String("shell-lexer".into()));
     match intent {
         ShellIntent::Move { from, to } => Some(CodeEventDraft {
             session_id: Some(ns.session_id.clone()),

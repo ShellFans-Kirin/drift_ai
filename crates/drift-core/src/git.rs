@@ -84,7 +84,9 @@ pub fn show_note(repo: &Path, commit: &str) -> Result<Option<String>> {
         .args(["notes", "--ref", "drift", "show", commit])
         .output()?;
     if out.status.success() {
-        Ok(Some(String::from_utf8_lossy(&out.stdout).trim_end().to_string()))
+        Ok(Some(
+            String::from_utf8_lossy(&out.stdout).trim_end().to_string(),
+        ))
     } else {
         Ok(None)
     }

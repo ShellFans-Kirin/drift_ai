@@ -31,7 +31,11 @@ pub fn run(repo: &Path) -> Result<()> {
             bound += events.len();
         }
     }
-    println!("auto-bind bound {} event(s) across {} session(s).", bound, sessions.len());
+    println!(
+        "auto-bind bound {} event(s) across {} session(s).",
+        bound,
+        sessions.len()
+    );
     Ok(())
 }
 

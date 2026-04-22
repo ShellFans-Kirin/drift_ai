@@ -86,10 +86,7 @@ enum Command {
     },
 
     /// Manually bind a session to a commit.
-    Bind {
-        commit: String,
-        session_id: String,
-    },
+    Bind { commit: String, session_id: String },
 
     /// Bind every captured session to its closest commit by timestamp.
     AutoBind,
@@ -141,7 +138,12 @@ fn main() -> Result<()> {
             session,
             agent,
             all_since,
-        } => commands::capture::run(&repo, session.as_deref(), agent.as_deref(), all_since.as_deref()),
+        } => commands::capture::run(
+            &repo,
+            session.as_deref(),
+            agent.as_deref(),
+            all_since.as_deref(),
+        ),
         Command::Watch => commands::watch::run(&repo),
         Command::List { agent } => commands::list::run(&repo, agent.as_deref()),
         Command::Show { session_id } => commands::show::run(&repo, &session_id),

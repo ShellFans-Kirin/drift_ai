@@ -17,6 +17,6 @@ pub mod shell_lexer;
 pub mod store;
 
 pub use model::{
-    AgentSlug, CodeEvent, NormalizedSession, Operation, Role, Turn, ToolCall, ToolResult,
+    AgentSlug, CodeEvent, NormalizedSession, Operation, Role, ToolCall, ToolResult, Turn,
 };
 pub use store::EventStore;

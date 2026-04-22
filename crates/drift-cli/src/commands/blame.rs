@@ -5,7 +5,11 @@ use std::path::Path;
 
 pub fn run(repo: &Path, file: &Path, line: Option<u32>, range: Option<&str>) -> Result<()> {
     let store = open_store(repo)?;
-    let rel = file.strip_prefix(repo).unwrap_or(file).to_string_lossy().to_string();
+    let rel = file
+        .strip_prefix(repo)
+        .unwrap_or(file)
+        .to_string_lossy()
+        .to_string();
     let events = store.events_for_file(&rel)?;
     if events.is_empty() {
         println!("(no events recorded for {})", rel);
@@ -41,9 +45,7 @@ pub fn run(repo: &Path, file: &Path, line: Option<u32>, range: Option<&str>) -> 
 
 fn touches(ev: &CodeEvent, rng: (u32, u32)) -> bool {
     let (s, e) = rng;
-    ev.line_ranges_after
-        .iter()
-        .any(|(a, b)| *a <= e && *b >= s)
+    ev.line_ranges_after.iter().any(|(a, b)| *a <= e && *b >= s)
         || ev
             .line_ranges_before
             .iter()
@@ -62,10 +64,7 @@ fn print_event(ev: &CodeEvent) {
         drift_core::model::AgentSlug::Human => "✋",
         _ => "💭",
     };
-    println!(
-        "├─ {}  {} [{}] {}",
-        ts, glyph, agent, session
-    );
+    println!("├─ {}  {} [{}] {}", ts, glyph, agent, session);
     if !ev.diff_hunks.is_empty() {
         for line in ev.diff_hunks.lines().take(8) {
             println!("│   {}", line);

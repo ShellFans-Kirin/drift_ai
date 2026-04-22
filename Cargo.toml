@@ -39,3 +39,19 @@ notify = "6"
 lto = "thin"
 codegen-units = 1
 strip = true
+
+[workspace.lints.clippy]
+# These lints are style-only and produce noise for code that's otherwise
+# correct — v0.1.0 prioritises shipping the honest data model over bikeshedding.
+too_many_arguments = "allow"
+type_complexity    = "allow"
+derivable_impls    = "allow"
+uninlined_format_args = "allow"
+collapsible_if     = "allow"
+needless_range_loop = "allow"
+useless_format     = "allow"
+redundant_closure  = "allow"
+module_inception   = "allow"
+new_without_default = "allow"
+single_match       = "allow"
+vec_init_then_push = "allow"

@@ -27,7 +27,10 @@ pub fn run(repo: &Path, session_id: &str) -> Result<()> {
         accepted,
         rejected
     );
-    println!("  files_touched: {}", files.iter().cloned().collect::<Vec<_>>().join(", "));
+    println!(
+        "  files_touched: {}",
+        files.iter().cloned().collect::<Vec<_>>().join(", ")
+    );
     for ev in &events {
         println!(
             "  {}  {:<6}  {:<40}  {}",

@@ -220,7 +220,10 @@ fn handle_tool_call(repo: &Path, params: &Value) -> Result<Value> {
             serde_json::to_string_pretty(&events)?
         }
         "drift_trace" => {
-            let sid = args.get("session_id").and_then(|v| v.as_str()).unwrap_or("");
+            let sid = args
+                .get("session_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let events = store.events_for_session(sid)?;
             serde_json::to_string_pretty(&events)?
         }
@@ -230,7 +233,10 @@ fn handle_tool_call(repo: &Path, params: &Value) -> Result<Value> {
             serde_json::to_string_pretty(&events)?
         }
         "drift_log" => {
-            let range = args.get("commit_range").and_then(|v| v.as_str()).map(String::from);
+            let range = args
+                .get("commit_range")
+                .and_then(|v| v.as_str())
+                .map(String::from);
             let commits = git::list_commits(repo, range.as_deref())?;
             let mut enriched = Vec::new();
             for c in commits {
