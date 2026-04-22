@@ -1,0 +1,28 @@
+[package]
+name = "drift-connectors"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Session connectors for Drift AI: Claude Code, Codex, and Aider (stub)."
+
+[dependencies]
+drift-core = { path = "../drift-core" }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+tracing.workspace = true
+dirs.workspace = true
+
+[features]
+default = ["claude-code", "codex"]
+claude-code = []
+codex = []
+aider = []
+
+[dev-dependencies]
+tempfile = "3"
