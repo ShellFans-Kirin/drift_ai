@@ -1,0 +1,2 @@
+{"type":"user","uuid":"u1","timestamp":"2026-04-20T10:00:00Z","sessionId":"fix-01","cwd":"/tmp/proj","message":{"role":"user","content":"hello"}}
+{"type":"assistant","uuid":"u2","timestamp":"2026-04-20T10:00:05Z","sessionId":"fix-01","cwd":"/tmp/proj","message":{"role":"assistant","content":[{"type":"text","text":"Hi back."}]}}

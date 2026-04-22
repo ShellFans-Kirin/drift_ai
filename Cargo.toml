@@ -1,0 +1,57 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/drift-core",
+    "crates/drift-connectors",
+    "crates/drift-cli",
+    "crates/drift-mcp",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "Apache-2.0"
+authors = ["drift_ai contributors"]
+repository = "https://github.com/shellfans-dev/drift_ai"
+homepage = "https://github.com/shellfans-dev/drift_ai"
+keywords = ["ai", "git", "blame", "claude", "codex"]
+categories = ["command-line-utilities", "development-tools"]
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+sha2 = "0.10"
+similar = "2"
+rusqlite = { version = "0.31", features = ["bundled"] }
+clap = { version = "4", features = ["derive", "env"] }
+dirs = "5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+notify = "6"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[workspace.lints.clippy]
+# These lints are style-only and produce noise for code that's otherwise
+# correct — v0.1.0 prioritises shipping the honest data model over bikeshedding.
+too_many_arguments = "allow"
+type_complexity    = "allow"
+derivable_impls    = "allow"
+uninlined_format_args = "allow"
+collapsible_if     = "allow"
+needless_range_loop = "allow"
+useless_format     = "allow"
+redundant_closure  = "allow"
+module_inception   = "allow"
+new_without_default = "allow"
+single_match       = "allow"
+vec_init_then_push = "allow"

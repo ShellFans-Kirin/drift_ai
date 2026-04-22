@@ -1,0 +1,23 @@
+{
+  "name": "drift",
+  "displayName": "Drift AI — blame & trace",
+  "version": "0.1.0",
+  "description": "Reverse lookup a line of code to its originating AI prompt, trace a session's events, query rejected suggestions. Read-only access via the Drift AI MCP server.",
+  "homepage": "https://github.com/shellfans-dev/drift_ai",
+  "license": "Apache-2.0",
+  "mcp": {
+    "server": "drift",
+    "install": "codex mcp add drift -- drift mcp",
+    "tools": [
+      "drift_blame",
+      "drift_trace",
+      "drift_rejected",
+      "drift_log",
+      "drift_show_event"
+    ]
+  },
+  "requires": {
+    "binary": "drift",
+    "install_hint": "cargo install drift-ai  # or download from https://github.com/shellfans-dev/drift_ai/releases"
+  }
+}

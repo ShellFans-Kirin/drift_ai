@@ -1,0 +1,4 @@
+{"type":"user","uuid":"u1","timestamp":"2026-04-20T12:00:00Z","sessionId":"fix-03","cwd":"/tmp/proj","message":{"role":"user","content":"write to forbidden.txt"}}
+{"type":"assistant","uuid":"u2","timestamp":"2026-04-20T12:00:01Z","sessionId":"fix-03","cwd":"/tmp/proj","message":{"role":"assistant","content":[{"type":"tool_use","id":"tc1","name":"Write","input":{"file_path":"forbidden.txt","content":"x"}}]}}
+{"type":"user","uuid":"u3","timestamp":"2026-04-20T12:00:02Z","sessionId":"fix-03","cwd":"/tmp/proj","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tc1","is_error":true,"content":"permission denied"}]}}
+{"type":"assistant","uuid":"u4","timestamp":"2026-04-20T12:00:03Z","sessionId":"fix-03","cwd":"/tmp/proj","message":{"role":"assistant","content":[{"type":"text","text":"I cannot write there."}]}}
