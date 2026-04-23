@@ -11,7 +11,7 @@ A single commit is 80% Claude Code, 15% Codex, a few human touch-ups.
 
 I built **Drift AI** — local-first line-level blame for the AI era.
 
-https://github.com/shellfans-dev/drift_ai
+https://github.com/ShellFans-Kirin/drift_ai
 
 ---
 
@@ -79,4 +79,4 @@ macOS (both archs), Apache-2.0, Rust.
 Looking for: folks to beat on the attribution layer across
 **multi-origin**, **human edit**, **rejected suggestion**, **rename**.
 
-https://github.com/shellfans-dev/drift_ai
+https://github.com/ShellFans-Kirin/drift_ai

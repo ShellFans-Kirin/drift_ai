@@ -3,7 +3,7 @@
 **Date**: 2026-04-21
 **Status**: Phase 0 (rev 2) complete; awaiting human approval before Phase 1.
 **Branch**: `phase0-proposal`
-**PR**: [#1](https://github.com/shellfans-dev/drift_ai/pull/1)
+**PR**: [#1](https://github.com/ShellFans-Kirin/drift_ai/pull/1)
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Item | Result |
 |------|--------|
-| GitHub repo | https://github.com/shellfans-dev/drift_ai (created) |
-| Draft PR | https://github.com/shellfans-dev/drift_ai/pull/1 |
-| Proposal raw | [docs/PHASE0-PROPOSAL.md](https://github.com/shellfans-dev/drift_ai/blob/phase0-proposal/docs/PHASE0-PROPOSAL.md) |
+| GitHub repo | https://github.com/ShellFans-Kirin/drift_ai (created) |
+| Draft PR | https://github.com/ShellFans-Kirin/drift_ai/pull/1 |
+| Proposal raw | [docs/PHASE0-PROPOSAL.md](https://github.com/ShellFans-Kirin/drift_ai/blob/phase0-proposal/docs/PHASE0-PROPOSAL.md) |
 | Recommended stack (one line) | **Rust** — daemon perf + single-binary distribution + diff/patch and `rusqlite` are hot paths for the attribution engine |
-| Recommended package names | crate `drift-ai`, npm `drift-ai`, go `github.com/shellfans-dev/drift_ai`, **CLI binary `drift`**, notes ref `refs/notes/drift` |
+| Recommended package names | crate `drift-ai`, npm `drift-ai`, go `github.com/ShellFans-Kirin/drift_ai`, **CLI binary `drift`**, notes ref `refs/notes/drift` |
 
 ---
 

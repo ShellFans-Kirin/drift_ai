@@ -3,7 +3,7 @@
   "displayName": "Drift AI — blame & trace",
   "version": "0.1.0",
   "description": "Reverse lookup a line of code to its originating AI prompt, and trace a session's produced events. Read-only queries over the local Drift AI store.",
-  "homepage": "https://github.com/shellfans-dev/drift_ai",
+  "homepage": "https://github.com/ShellFans-Kirin/drift_ai",
   "license": "Apache-2.0",
   "mcpServers": {
     "drift": {

@@ -76,7 +76,7 @@ drift_ai/
 | MultiEdit | one CodeEvent per inner edit, intra-call `parent_event_id` | preserves per-line attribution without string-hacking |
 | Anthropic HTTP | deferred | CI lacks a key; Mock is first-class, real API is a wire-up |
 | Cargo publish | deferred | you want to confirm crates.io naming manually |
-| Homebrew tap | deferred | requires a second repo (`shellfans-dev/homebrew-drift`) |
+| Homebrew tap | deferred | requires a second repo (`ShellFans-Kirin/homebrew-drift`) |
 
 ## 4. Test results
 
@@ -181,7 +181,7 @@ asks for, rendered from real session data with zero fixtures.
 ## 7. Quickstart (verified from `/tmp`)
 
 ```bash
-git clone https://github.com/shellfans-dev/drift_ai.git
+git clone https://github.com/ShellFans-Kirin/drift_ai.git
 cd drift_ai
 cargo build --release
 cp target/release/drift ~/.local/bin/drift    # or wherever
@@ -211,7 +211,7 @@ git checkout main
 git merge --ff-only phase1-through-5         # or via PR merge UI
 git tag -a v0.1.0 -m "drift_ai v0.1.0"
 git push origin main v0.1.0
-# Watch https://github.com/shellfans-dev/drift_ai/actions for release.yml
+# Watch https://github.com/ShellFans-Kirin/drift_ai/actions for release.yml
 ```
 
 ### b) Homebrew tap — **⚠️ manual (template committed)**
@@ -220,9 +220,9 @@ Template is at `docs/distribution/drift.rb.template`. Three steps:
 
 1. Create the tap repo:
    ```bash
-   gh repo create shellfans-dev/homebrew-drift --public \
+   gh repo create ShellFans-Kirin/homebrew-drift --public \
      --description "Homebrew tap for drift_ai" --license "Apache-2.0"
-   git clone https://github.com/shellfans-dev/homebrew-drift.git
+   git clone https://github.com/ShellFans-Kirin/homebrew-drift.git
    mkdir -p homebrew-drift/Formula
    ```
 2. Fill in the `sha256` values from the v0.1.0 release artefacts:
@@ -230,7 +230,7 @@ Template is at `docs/distribution/drift.rb.template`. Three steps:
    # after release.yml completes:
    for tgt in aarch64-apple-darwin x86_64-apple-darwin \
               aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
-     curl -sSL "https://github.com/shellfans-dev/drift_ai/releases/download/v0.1.0/drift-v0.1.0-${tgt}.tar.gz.sha256"
+     curl -sSL "https://github.com/ShellFans-Kirin/drift_ai/releases/download/v0.1.0/drift-v0.1.0-${tgt}.tar.gz.sha256"
    done
    ```
    Substitute the four `<FILL-IN-SHA256-...>` markers in the template,
@@ -242,7 +242,7 @@ Template is at `docs/distribution/drift.rb.template`. Three steps:
    git commit -m "drift v0.1.0"
    git push
    ```
-   Users then `brew tap shellfans-dev/drift && brew install drift`.
+   Users then `brew tap ShellFans-Kirin/drift && brew install drift`.
 
 ### c) `cargo publish` — **⚠️ manual (dry-run passed)**
 
@@ -297,7 +297,7 @@ overwrite the summaries with real ones.
 |---|------|-----------|
 | 1 | Merge `phase1-through-5` → `main`; tag `v0.1.0`; push | Triggers release.yml, Homebrew step depends on artefacts |
 | 2 | `cargo publish` in dependency order | Reserve the name on crates.io before someone else |
-| 3 | Create `shellfans-dev/homebrew-drift` tap repo | Unblocks `brew install drift` |
+| 3 | Create `ShellFans-Kirin/homebrew-drift` tap repo | Unblocks `brew install drift` |
 | 4 | Wire `AnthropicProvider` HTTP (add `reqwest` + ~30 LOC) | Elevates compaction summaries from `[MOCK]` to real |
 | 5 | Submit PR to ComposioHQ/awesome-claude-plugins | Listed at `docs/launch/awesome-claude-plugins-pr.md` |
 | 6 | Post Show HN | Draft at `docs/launch/hn-show-hn.md` |

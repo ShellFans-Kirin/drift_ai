@@ -47,13 +47,13 @@ rejected. See [`docs/VISION.md`](docs/VISION.md).
 
 ```bash
 # Check the latest release
-curl -sSfL https://github.com/shellfans-dev/drift_ai/releases/latest
+curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest
 ```
 
 **From source** (requires Rust 1.85+):
 
 ```bash
-git clone https://github.com/shellfans-dev/drift_ai.git
+git clone https://github.com/ShellFans-Kirin/drift_ai.git
 cd drift_ai
 cargo install --path crates/drift-cli
 ```

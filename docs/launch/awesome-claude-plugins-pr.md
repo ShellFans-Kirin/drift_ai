@@ -34,7 +34,7 @@ Add under the appropriate section (e.g. "Developer Tools" or
 "Productivity"):
 
 ```markdown
-- **[drift_ai](https://github.com/shellfans-dev/drift_ai)** —
+- **[drift_ai](https://github.com/ShellFans-Kirin/drift_ai)** —
   Local-first AI-native `git blame`: captures Claude Code sessions,
   line-level attribution, MCP server for reverse/forward lookup.
   Apache-2.0, Rust.

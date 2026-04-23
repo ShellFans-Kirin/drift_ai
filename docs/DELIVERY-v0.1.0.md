@@ -11,20 +11,20 @@
 
 | 項目 | URL |
 |---|---|
-| Repo | https://github.com/shellfans-dev/drift_ai |
-| PR phase1-through-5（已 squash-merge） | https://github.com/shellfans-dev/drift_ai/pull/2 |
-| v0.1.0 tag | https://github.com/shellfans-dev/drift_ai/tree/v0.1.0 |
-| GitHub Release | https://github.com/shellfans-dev/drift_ai/releases/tag/v0.1.0 |
-| STEP1-5 工程完工報告 | https://github.com/shellfans-dev/drift_ai/blob/main/docs/STEP1-5-COMPLETION-REPORT.md |
-| VISION | https://github.com/shellfans-dev/drift_ai/blob/main/docs/VISION.md |
-| PHASE0-PROPOSAL | https://github.com/shellfans-dev/drift_ai/blob/main/docs/PHASE0-PROPOSAL.md |
+| Repo | https://github.com/ShellFans-Kirin/drift_ai |
+| PR phase1-through-5（已 squash-merge） | https://github.com/ShellFans-Kirin/drift_ai/pull/2 |
+| v0.1.0 tag | https://github.com/ShellFans-Kirin/drift_ai/tree/v0.1.0 |
+| GitHub Release | https://github.com/ShellFans-Kirin/drift_ai/releases/tag/v0.1.0 |
+| STEP1-5 工程完工報告 | https://github.com/ShellFans-Kirin/drift_ai/blob/main/docs/STEP1-5-COMPLETION-REPORT.md |
+| VISION | https://github.com/ShellFans-Kirin/drift_ai/blob/main/docs/VISION.md |
+| PHASE0-PROPOSAL | https://github.com/ShellFans-Kirin/drift_ai/blob/main/docs/PHASE0-PROPOSAL.md |
 
 ---
 
 ## ⚡ 一行 Quickstart
 
 ```bash
-git clone https://github.com/shellfans-dev/drift_ai.git && cd drift_ai && cargo build --release && \
+git clone https://github.com/ShellFans-Kirin/drift_ai.git && cd drift_ai && cargo build --release && \
   TMP=$(mktemp -d) && (cd $TMP && git init -q && git config user.email x@y && git config user.name x && \
   /home/kirin/drift_ai/target/release/drift init && /home/kirin/drift_ai/target/release/drift capture && \
   /home/kirin/drift_ai/target/release/drift list | head)
@@ -106,8 +106,8 @@ claude mcp add drift -- drift mcp   # 一次完成 Claude Code 整合
 
 | 通路 | 狀態 | 細節 |
 |---|---|---|
-| **GitHub Releases binary** | ✅ 上線 | [v0.1.0 release](https://github.com/shellfans-dev/drift_ai/releases/tag/v0.1.0)<br>`drift-v0.1.0-x86_64-unknown-linux-gnu.tar.gz`<br>sha256：`fca7234401ad4da0943e894e387d94174b6121dc646d7d2807486a71e407cac3`<br>*macOS + aarch64 tarball 等 Actions 啟用後由 release.yml 自動補上* |
-| **Homebrew** | 📋 模板已 commit | `docs/distribution/drift.rb.template`<br>手動 3 步：建 `shellfans-dev/homebrew-drift` tap → 填 sha256 → push |
+| **GitHub Releases binary** | ✅ 上線 | [v0.1.0 release](https://github.com/ShellFans-Kirin/drift_ai/releases/tag/v0.1.0)<br>`drift-v0.1.0-x86_64-unknown-linux-gnu.tar.gz`<br>sha256：`fca7234401ad4da0943e894e387d94174b6121dc646d7d2807486a71e407cac3`<br>*macOS + aarch64 tarball 等 Actions 啟用後由 release.yml 自動補上* |
+| **Homebrew** | 📋 模板已 commit | `docs/distribution/drift.rb.template`<br>手動 3 步：建 `ShellFans-Kirin/homebrew-drift` tap → 填 sha256 → push |
 | **cargo publish** | ✅ dry-run 過 | `cargo publish --dry-run -p drift-core --allow-dirty` 通過（15 files, 87.3 KiB）<br>手動 publish 順序：`drift-core` → `drift-connectors` → `drift-mcp` → `drift-ai` |
 
 ---
@@ -138,7 +138,7 @@ claude mcp add drift -- drift mcp   # 一次完成 Claude Code 整合
 |---|---|
 | 🔴 高 | repo Settings 啟用 GitHub Actions，重跑 release.yml 補齊 macOS + aarch64 binary |
 | 🔴 高 | `cargo publish` 依序 4 crate（搶 crates.io 名字） |
-| 🟡 中 | 建 `shellfans-dev/homebrew-drift` tap，貼 Formula |
+| 🟡 中 | 建 `ShellFans-Kirin/homebrew-drift` tap，貼 Formula |
 | 🟡 中 | 接線 AnthropicProvider HTTP（~30 行，換掉 `[MOCK]`） |
 | 🟢 低 | 送 PR 到 `ComposioHQ/awesome-claude-plugins`（草稿 `docs/launch/awesome-claude-plugins-pr.md`） |
 | 🟢 低 | 發 Show HN + Twitter thread（草稿 `docs/launch/hn-show-hn.md`、`twitter-thread.md`） |

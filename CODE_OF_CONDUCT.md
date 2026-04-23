@@ -11,7 +11,7 @@ their own time.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may
 be reported to the maintainers via a private GitHub advisory on the
-[drift_ai repository](https://github.com/shellfans-dev/drift_ai/security/advisories)
+[drift_ai repository](https://github.com/ShellFans-Kirin/drift_ai/security/advisories)
 or by email to the address listed in `Cargo.toml`.
 
 All complaints will be reviewed and investigated promptly and fairly.

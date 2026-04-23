@@ -2,7 +2,7 @@
 
 **Title**: Show HN: Drift AI — git blame for the AI coding era (Rust, local-first, Claude Code + Codex on day one)
 
-**URL**: https://github.com/shellfans-dev/drift_ai
+**URL**: https://github.com/ShellFans-Kirin/drift_ai
 
 **Body**:
 

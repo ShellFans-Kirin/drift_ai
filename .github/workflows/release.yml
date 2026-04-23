@@ -92,13 +92,13 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            See [CHANGELOG.md](https://github.com/shellfans-dev/drift_ai/blob/main/CHANGELOG.md) for the full set of changes.
+            See [CHANGELOG.md](https://github.com/ShellFans-Kirin/drift_ai/blob/main/CHANGELOG.md) for the full set of changes.
 
             ### Install from a pre-built binary
 
             ```bash
             # Linux x86_64 — swap the target suffix for macos-aarch64 etc.
-            curl -sSfL https://github.com/shellfans-dev/drift_ai/releases/download/${{ github.ref_name }}/drift-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz \
+            curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/download/${{ github.ref_name }}/drift-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz \
               | tar xz -C /tmp
             sudo mv /tmp/drift /usr/local/bin/drift
             drift --version

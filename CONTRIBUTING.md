@@ -9,7 +9,7 @@ drift.
 ## Development setup
 
 ```bash
-git clone https://github.com/shellfans-dev/drift_ai.git
+git clone https://github.com/ShellFans-Kirin/drift_ai.git
 cd drift_ai
 cargo test --workspace
 cargo build --workspace --release

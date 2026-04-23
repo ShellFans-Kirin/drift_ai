@@ -13,8 +13,8 @@ edition = "2021"
 rust-version = "1.85"
 license = "Apache-2.0"
 authors = ["drift_ai contributors"]
-repository = "https://github.com/shellfans-dev/drift_ai"
-homepage = "https://github.com/shellfans-dev/drift_ai"
+repository = "https://github.com/ShellFans-Kirin/drift_ai"
+homepage = "https://github.com/ShellFans-Kirin/drift_ai"
 keywords = ["ai", "git", "blame", "claude", "codex"]
 categories = ["command-line-utilities", "development-tools"]
 

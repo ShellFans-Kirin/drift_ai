@@ -43,7 +43,7 @@ This proposal is the only checkpoint where bootstrap stops for human review.
 | `codex` | codex-cli 0.122.0 | OK; sandbox blocked by missing bubblewrap permissions on this host (writes through `apply_patch` fail at execution, but the intent is fully captured in the rollout JSONL) |
 | `git config` | empty originally | Set to `kirin / kirin@shell.fans` in Phase 0 |
 | `ANTHROPIC_API_KEY` | **not set** | **[NEEDS-INPUT]** for Phase 3 real-API smoke; Mock works for tests |
-| `gh repo view shellfans-dev/drift_ai` | exists | Created Phase 0 |
+| `gh repo view ShellFans-Kirin/drift_ai` | exists | Created Phase 0 |
 
 **Sessions on disk after Phase 0 seeding** (4 total — bootstrap doesn't
 need more, fixtures will be hand-derived from these):
@@ -101,7 +101,7 @@ locks out the polyglot sysadmin/CI-only user.
 |-------|------|--------|
 | GitHub repo | `drift_ai` | already created |
 | Cargo crate | `drift-ai` | Rust convention is hyphen; auto-maps to module `drift_ai` |
-| Go module path | `github.com/shellfans-dev/drift_ai` | matches repo |
+| Go module path | `github.com/ShellFans-Kirin/drift_ai` | matches repo |
 | npm package | `drift-ai` | npm convention is hyphen |
 | **CLI binary** | `drift` | short, ergonomic; user types `drift blame ...` |
 | `git notes` ref | `refs/notes/drift` | tracks the binary name, not the package |
@@ -608,5 +608,5 @@ Items 2, 3, 4 force re-doing pieces of Phase 1; item 1 only blocks Phase 3.
 - [x] **Data model (D.1–D.5) with self-evaluation against four requirements**
 - [x] Local repo with LICENSE / README / `.gitignore`
 - [x] This proposal committed
-- [x] Repo pushed to `shellfans-dev/drift_ai`
+- [x] Repo pushed to `ShellFans-Kirin/drift_ai`
 - [x] `phase0-proposal` PR opened as draft (PR #1)
