@@ -85,6 +85,22 @@ jobs:
           mkdir -p flat
           find dist -type f \( -name '*.tar.gz' -o -name '*.sha256' \) -exec cp {} flat/ \;
 
+      - name: Collect sha256 outputs
+        id: sha256
+        run: |
+          set -euo pipefail
+          cd flat
+          read_sha() {
+            local f="drift-${GITHUB_REF_NAME}-$1.tar.gz.sha256"
+            [ -f "$f" ] && awk '{print $1}' "$f" || echo ""
+          }
+          {
+            echo "linux_x86=$(read_sha x86_64-unknown-linux-gnu)"
+            echo "linux_arm=$(read_sha aarch64-unknown-linux-gnu)"
+            echo "macos_x86=$(read_sha x86_64-apple-darwin)"
+            echo "macos_arm=$(read_sha aarch64-apple-darwin)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -105,3 +121,21 @@ jobs:
             ```
 
             Targets shipped: Linux x86_64 / aarch64, macOS x86_64 / aarch64.
+
+      - name: Dispatch tap update
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TAP_REPO_PAT }}
+          repository: ShellFans-Kirin/homebrew-drift
+          event-type: drift-released
+          client-payload: |
+            {
+              "version": "${{ github.ref_name }}",
+              "tag": "${{ github.ref_name }}",
+              "sha256": {
+                "x86_64-unknown-linux-gnu": "${{ steps.sha256.outputs.linux_x86 }}",
+                "aarch64-unknown-linux-gnu": "${{ steps.sha256.outputs.linux_arm }}",
+                "x86_64-apple-darwin": "${{ steps.sha256.outputs.macos_x86 }}",
+                "aarch64-apple-darwin": "${{ steps.sha256.outputs.macos_arm }}"
+              }
+            }
