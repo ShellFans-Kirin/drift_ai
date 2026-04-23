@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.85"
 license = "Apache-2.0"
@@ -34,6 +34,11 @@ dirs = "5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 notify = "6"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "time", "signal"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+mockito = "1"
+ctrlc = { version = "3", features = ["termination"] }
 
 [profile.release]
 lto = "thin"

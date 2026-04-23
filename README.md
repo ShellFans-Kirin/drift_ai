@@ -43,23 +43,33 @@ rejected. See [`docs/VISION.md`](docs/VISION.md).
 
 ## Install
 
-**Pre-built binaries** (macOS x86_64/arm64 + Linux x86_64/arm64):
+**Homebrew** (macOS arm64/x86_64, Linux arm64/x86_64):
 
 ```bash
-# Check the latest release
-curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest
+brew install ShellFans-Kirin/drift/drift
 ```
 
-**From source** (requires Rust 1.85+):
+**crates.io** (Rust 1.85+ toolchain required):
+
+```bash
+cargo install drift-ai
+```
+
+**Pre-built binaries** (GitHub Releases):
+
+```bash
+curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.1.1-$(uname -m)-unknown-linux-gnu.tar.gz \
+  | tar xz -C /tmp && sudo mv /tmp/drift /usr/local/bin/drift
+drift --version
+```
+
+**From source**:
 
 ```bash
 git clone https://github.com/ShellFans-Kirin/drift_ai.git
 cd drift_ai
 cargo install --path crates/drift-cli
 ```
-
-**Homebrew tap** (planned for v0.1.x — see
-[`docs/distribution/drift.rb.template`](docs/distribution/drift.rb.template)).
 
 ## Quickstart
 
@@ -81,6 +91,64 @@ rm -rf /tmp/drift-smoke && mkdir -p /tmp/drift-smoke && cd /tmp/drift-smoke
 git init -q && git config user.email ""x@y"" && git config user.name x
 drift init && drift capture && drift list
 ```
+
+## Live mode — event-driven watcher
+
+`drift watch` is an event-driven daemon backed by the platform's native
+file-system notifications (FSEvents on macOS, inotify on Linux,
+ReadDirectoryChangesW on Windows). It coalesces rapid writes against the
+same session file inside a 200ms window, so a long running Claude Code
+or Codex session produces one capture pass per idle moment, not one
+per tool call. State is persisted to `~/.config/drift/watch-state.toml`
+so a restart resumes rather than rescans. `Ctrl-C` finishes the
+current capture and exits cleanly.
+
+```bash
+drift watch
+# drift watch · event-driven; Ctrl-C to stop
+#   watching /home/you/.claude/projects
+#   watching /home/you/.codex/sessions
+#   first run; capturing every session seen
+# drift capture · provider=anthropic
+# Captured 10 session(s), wrote 192 event(s) to .prompts/events.db
+# ...
+# drift watch · interrupt received; exiting after last capture
+```
+
+## Cost transparency
+
+Every Anthropic compaction call is logged to `compaction_calls` in
+`events.db` with input / output / cache token counts and a computed USD
+cost (built-in pricing table per model; cross-check against
+<https://www.anthropic.com/pricing> before trusting as invoice-ready).
+
+```bash
+drift cost
+# drift cost — compaction billing
+#   total calls      : 10
+#   input tokens     : 120958
+#   output tokens    : 6582
+#   cache creation   : 0
+#   cache read       : 0
+#   total cost (USD) : $0.1539
+
+drift cost --by model
+# ── grouped by model (descending cost)
+#   key                    calls   input_tok   output_tok     cost (USD)
+#   claude-haiku-4-5          10      120958         6582        $0.1539
+
+drift cost --by session
+# ── grouped by session (descending cost)
+#   key                                     calls   input_tok   output_tok     cost (USD)
+#   4b1e2ba0-621c-4977-af3f-2a9df5ac45ec        2       51696         2448        $0.0564
+#   ad01ae46-156f-403b-b263-dd04a232873a        1       33662         2390        $0.0456
+#   ...
+```
+
+Filter with `--since <date>`, `--until <date>`, `--model <name>`.
+Switching from Opus to Haiku on the same 10-session corpus takes
+compaction from **$2.91 → $0.15** — a ~19× reduction at the cost of
+slightly terser summaries.
 
 ## AI-native blame
 
@@ -150,15 +218,16 @@ codex = true
 aider = false             # feature-gated stub
 
 [compaction]
-model = "claude-opus-4-7" # used when ANTHROPIC_API_KEY is set
-# provider = "mock"       # force Mock (default when key is unset)
+provider = "anthropic"    # default; set to "mock" to run offline
+model = "claude-opus-4-7" # or claude-sonnet-4-6 / claude-haiku-4-5
 ```
 
-`ANTHROPIC_API_KEY`: only required for the real API compaction path.
-Without it, drift_ai uses `MockProvider` and tags summaries `[MOCK]` —
-nothing else is affected.
+`ANTHROPIC_API_KEY`: required for the live API compaction path. When
+it's unset, drift_ai transparently falls back to `MockProvider` and
+every summary is labelled `[MOCK]` so you never mistake a fallback
+run for a real one — nothing else in the pipeline changes.
 
-## Honest limitations (v0.1.0)
+## Honest limitations (v0.1.1)
 
 - Human-edit detection is SHA-ladder only — we do not claim authorship,
   the `human` slug means "no AI session produced this". See VISION.md.
@@ -167,10 +236,11 @@ nothing else is affected.
   `human`.
 - Codex `reasoning` items are encrypted; we count them, we do not
   surface them.
-- `drift watch` is a debounced polling daemon, not a fully
-  event-driven reactor (v0.2).
-- Anthropic HTTP call is stubbed — Mock path is the shipping default.
-  The integration point is marked in `crates/drift-core/src/compaction.rs`.
+- Cost totals use a hardcoded pricing table — cross-check against
+  <https://www.anthropic.com/pricing> before treating as invoice-ready.
+- Context-window truncation is deterministic head+tail elision
+  (Strategy 1); hierarchical summarization (Strategy 2) is stubbed
+  behind a feature flag for v0.2.
 
 ## License
 

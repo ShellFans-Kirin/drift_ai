@@ -3,7 +3,10 @@ use anyhow::{Context, Result};
 use chrono::DateTime;
 use drift_connectors::default_connectors;
 use drift_core::attribution::commit_drafts;
-use drift_core::compaction::{summary_to_markdown, CompactionProvider, MockProvider};
+use drift_core::compaction::{
+    summary_to_markdown, AnthropicProvider, CompactionProvider, MockProvider,
+};
+use drift_core::config;
 use std::path::Path;
 
 pub fn run(
@@ -15,7 +18,12 @@ pub fn run(
     super::init::run(repo).ok(); // ensure .prompts/ exists
     let store = open_store(repo)?;
     let connectors = default_connectors();
-    let provider: Box<dyn CompactionProvider> = Box::new(MockProvider);
+    let cfg = config::load(repo).unwrap_or_default();
+    let provider: Box<dyn CompactionProvider> = select_provider(&cfg);
+    eprintln!(
+        "drift capture · provider={} (set [compaction].provider=\"anthropic\" + ANTHROPIC_API_KEY for live compaction)",
+        provider.name()
+    );
     let sessions_dir_p = sessions_dir(repo);
     std::fs::create_dir_all(&sessions_dir_p)?;
 
@@ -55,7 +63,32 @@ pub fn run(
             let events = commit_drafts(&store, drafts)?;
             n_events += events.len();
 
-            let summary = provider.compact(&ns)?;
+            // Compact. Soft-fail on a single session: log + skip so a huge
+            // session that blows the context window doesn't abort the batch.
+            let res = match provider.compact(&ns) {
+                Ok(r) => r,
+                Err(e) => {
+                    tracing::warn!(
+                        session = %ns.session_id,
+                        provider = provider.name(),
+                        "compaction failed, skipping session: {}",
+                        e
+                    );
+                    eprintln!(
+                        "warning: skipping session {} ({}): {}",
+                        ns.session_id,
+                        provider.name(),
+                        e
+                    );
+                    continue;
+                }
+            };
+            if let Some(ref usage) = res.usage {
+                store.insert_compaction_call(usage).with_context(|| {
+                    format!("record compaction_call for session {}", ns.session_id)
+                })?;
+            }
+            let summary = res.summary;
             let md = summary_to_markdown(&summary);
             let date = ns.started_at.format("%Y-%m-%d");
             let short = ns.session_id.chars().take(8).collect::<String>();
@@ -89,4 +122,17 @@ pub fn run(
         super::events_db_path(repo).display()
     );
     Ok(())
+}
+
+/// Resolve the compaction provider at capture-time. If the project / global
+/// config asks for anthropic and a key is present, use it; otherwise fall
+/// back to [`MockProvider`] so CI / dry-runs still work.
+fn select_provider(cfg: &drift_core::config::DriftConfig) -> Box<dyn CompactionProvider> {
+    let wants_anthropic = matches!(cfg.compaction.provider.as_deref(), Some("anthropic") | None);
+    if wants_anthropic {
+        if let Some(p) = AnthropicProvider::try_new(Some(cfg.compaction.model.clone())) {
+            return Box::new(p);
+        }
+    }
+    Box::new(MockProvider)
 }

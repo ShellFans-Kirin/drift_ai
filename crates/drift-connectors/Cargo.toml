@@ -8,9 +8,10 @@ authors.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Session connectors for Drift AI: Claude Code, Codex, and Aider (stub)."
+readme = "README.md"
 
 [dependencies]
-drift-core = { path = "../drift-core", version = "0.1.0" }
+drift-core = { path = "../drift-core", version = "0.1.1" }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true

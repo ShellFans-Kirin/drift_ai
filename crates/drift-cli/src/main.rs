@@ -43,6 +43,22 @@ enum Command {
     /// Background daemon monitoring both agent directories.
     Watch,
 
+    /// Aggregate compaction token usage and cost.
+    Cost {
+        /// ISO-8601 lower bound for called_at (inclusive).
+        #[arg(long)]
+        since: Option<String>,
+        /// ISO-8601 upper bound for called_at (inclusive).
+        #[arg(long)]
+        until: Option<String>,
+        /// Exact model string to filter on.
+        #[arg(long)]
+        model: Option<String>,
+        /// Group output by `model`, `session`, or `date`.
+        #[arg(long = "by")]
+        by: Option<String>,
+    },
+
     /// List captured sessions.
     List {
         #[arg(long)]
@@ -145,6 +161,18 @@ fn main() -> Result<()> {
             all_since.as_deref(),
         ),
         Command::Watch => commands::watch::run(&repo),
+        Command::Cost {
+            since,
+            until,
+            model,
+            by,
+        } => commands::cost::run(
+            &repo,
+            since.as_deref(),
+            until.as_deref(),
+            model.as_deref(),
+            by.as_deref(),
+        ),
         Command::List { agent } => commands::list::run(&repo, agent.as_deref()),
         Command::Show { session_id } => commands::show::run(&repo, &session_id),
         Command::Blame { file, line, range } => {

@@ -3,6 +3,7 @@ pub mod bind;
 pub mod blame;
 pub mod capture;
 pub mod config;
+pub mod cost;
 pub mod diff;
 pub mod init;
 pub mod install_hook;

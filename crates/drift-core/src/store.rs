@@ -4,6 +4,7 @@
 //! The store is the only writer; readers use the query helpers here or
 //! directly (for `drift blame` / `drift trace`).
 
+use crate::compaction::CompactionUsage;
 use crate::model::{AgentSlug, CodeEvent, Operation};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
@@ -64,6 +65,26 @@ CREATE TABLE IF NOT EXISTS file_shas (
 );
 "#;
 
+/// v2 adds per-compaction-call billing records so `drift cost` can aggregate
+/// real Anthropic usage. Introduced in v0.1.1.
+const SCHEMA_V2: &str = r#"
+CREATE TABLE IF NOT EXISTS compaction_calls (
+    id                    TEXT PRIMARY KEY,
+    session_id            TEXT NOT NULL,
+    model                 TEXT NOT NULL,
+    input_tokens          INTEGER NOT NULL,
+    output_tokens         INTEGER NOT NULL,
+    cache_creation_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_read_tokens     INTEGER NOT NULL DEFAULT 0,
+    cost_usd              REAL    NOT NULL,
+    called_at             TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_compaction_calls_session    ON compaction_calls(session_id);
+CREATE INDEX IF NOT EXISTS idx_compaction_calls_called_at  ON compaction_calls(called_at);
+CREATE INDEX IF NOT EXISTS idx_compaction_calls_model      ON compaction_calls(model);
+"#;
+
 pub struct EventStore {
     pub(crate) conn: Connection,
 }
@@ -89,6 +110,7 @@ impl EventStore {
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.execute_batch(SCHEMA_V1)?;
+        conn.execute_batch(SCHEMA_V2)?;
         Ok(())
     }
 
@@ -299,6 +321,132 @@ impl EventStore {
         Ok(out)
     }
 
+    /// Persist a single [`CompactionUsage`] record. Called once per
+    /// successful Anthropic compaction; Mock compactions skip logging.
+    pub fn insert_compaction_call(&self, u: &CompactionUsage) -> Result<()> {
+        self.conn.execute(
+            r#"INSERT OR REPLACE INTO compaction_calls
+                (id, session_id, model, input_tokens, output_tokens,
+                 cache_creation_tokens, cache_read_tokens, cost_usd, called_at)
+               VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)"#,
+            params![
+                u.id,
+                u.session_id,
+                u.model,
+                u.input_tokens as i64,
+                u.output_tokens as i64,
+                u.cache_creation_tokens as i64,
+                u.cache_read_tokens as i64,
+                u.cost_usd,
+                u.called_at.to_rfc3339(),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Aggregate calls into a totals row, optionally filtered.
+    pub fn query_cost(&self, filter: &CostFilter) -> Result<CostTotals> {
+        let mut where_clauses: Vec<String> = Vec::new();
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        if let Some(s) = &filter.since {
+            where_clauses.push("called_at >= ?".into());
+            params_vec.push(Box::new(s.clone()));
+        }
+        if let Some(u) = &filter.until {
+            where_clauses.push("called_at <= ?".into());
+            params_vec.push(Box::new(u.clone()));
+        }
+        if let Some(m) = &filter.model {
+            where_clauses.push("model = ?".into());
+            params_vec.push(Box::new(m.clone()));
+        }
+        let where_sql = if where_clauses.is_empty() {
+            String::new()
+        } else {
+            format!(" WHERE {}", where_clauses.join(" AND "))
+        };
+        let sql = format!(
+            "SELECT COUNT(*), COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), \
+             COALESCE(SUM(cache_creation_tokens),0), COALESCE(SUM(cache_read_tokens),0), \
+             COALESCE(SUM(cost_usd),0) \
+             FROM compaction_calls{}",
+            where_sql
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
+        let params_slice: Vec<&dyn rusqlite::ToSql> =
+            params_vec.iter().map(|b| b.as_ref()).collect();
+        let row = stmt.query_row(params_slice.as_slice(), |r| {
+            Ok(CostTotals {
+                calls: r.get::<_, i64>(0)? as u64,
+                input_tokens: r.get::<_, i64>(1)? as u64,
+                output_tokens: r.get::<_, i64>(2)? as u64,
+                cache_creation_tokens: r.get::<_, i64>(3)? as u64,
+                cache_read_tokens: r.get::<_, i64>(4)? as u64,
+                total_cost_usd: r.get::<_, f64>(5)?,
+            })
+        })?;
+        Ok(row)
+    }
+
+    /// Group totals by model / session / date (yyyy-mm-dd). Returns rows
+    /// ordered by total cost descending.
+    pub fn query_cost_grouped(
+        &self,
+        filter: &CostFilter,
+        by: CostGroupBy,
+    ) -> Result<Vec<CostGroupRow>> {
+        let group_col = match by {
+            CostGroupBy::Model => "model",
+            CostGroupBy::Session => "session_id",
+            CostGroupBy::Date => "substr(called_at, 1, 10)",
+        };
+
+        let mut where_clauses: Vec<String> = Vec::new();
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        if let Some(s) = &filter.since {
+            where_clauses.push("called_at >= ?".into());
+            params_vec.push(Box::new(s.clone()));
+        }
+        if let Some(u) = &filter.until {
+            where_clauses.push("called_at <= ?".into());
+            params_vec.push(Box::new(u.clone()));
+        }
+        if let Some(m) = &filter.model {
+            where_clauses.push("model = ?".into());
+            params_vec.push(Box::new(m.clone()));
+        }
+        let where_sql = if where_clauses.is_empty() {
+            String::new()
+        } else {
+            format!(" WHERE {}", where_clauses.join(" AND "))
+        };
+        let sql = format!(
+            "SELECT {group} AS grp, COUNT(*), COALESCE(SUM(input_tokens),0), \
+             COALESCE(SUM(output_tokens),0), COALESCE(SUM(cost_usd),0) \
+             FROM compaction_calls{where_sql} \
+             GROUP BY grp ORDER BY SUM(cost_usd) DESC",
+            group = group_col,
+            where_sql = where_sql
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
+        let params_slice: Vec<&dyn rusqlite::ToSql> =
+            params_vec.iter().map(|b| b.as_ref()).collect();
+        let rows = stmt.query_map(params_slice.as_slice(), |r| {
+            Ok(CostGroupRow {
+                key: r.get::<_, String>(0)?,
+                calls: r.get::<_, i64>(1)? as u64,
+                input_tokens: r.get::<_, i64>(2)? as u64,
+                output_tokens: r.get::<_, i64>(3)? as u64,
+                total_cost_usd: r.get::<_, f64>(4)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
     pub fn list_sessions(&self, agent: Option<AgentSlug>) -> Result<Vec<SessionRow>> {
         let mut out = Vec::new();
         let mapper = |r: &Row| {
@@ -337,6 +485,39 @@ impl EventStore {
         }
         Ok(out)
     }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CostFilter {
+    pub since: Option<String>,
+    pub until: Option<String>,
+    pub model: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CostGroupBy {
+    Model,
+    Session,
+    Date,
+}
+
+#[derive(Debug, Clone)]
+pub struct CostTotals {
+    pub calls: u64,
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+    pub cache_creation_tokens: u64,
+    pub cache_read_tokens: u64,
+    pub total_cost_usd: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct CostGroupRow {
+    pub key: String,
+    pub calls: u64,
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+    pub total_cost_usd: f64,
 }
 
 #[derive(Debug, Clone)]

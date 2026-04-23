@@ -16,7 +16,12 @@ pub mod model;
 pub mod shell_lexer;
 pub mod store;
 
+pub use compaction::{
+    compute_cost_usd, pricing_for, AnthropicProvider, CompactedSummary, CompactionError,
+    CompactionProvider, CompactionRes, CompactionResult, CompactionUsage, MockProvider,
+    ModelPricing,
+};
 pub use model::{
     AgentSlug, CodeEvent, NormalizedSession, Operation, Role, ToolCall, ToolResult, Turn,
 };
-pub use store::EventStore;
+pub use store::{CostFilter, CostGroupBy, CostGroupRow, CostTotals, EventStore};
