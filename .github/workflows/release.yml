@@ -23,9 +23,9 @@ jobs:
             os: ubuntu-latest
             cross: true
           - target: x86_64-apple-darwin
-            os: macos-13          # Intel runner — last one GitHub provides
+            os: macos-14          # Apple Silicon runner, cross-compile to x86_64
           - target: aarch64-apple-darwin
-            os: macos-14          # Apple Silicon runner
+            os: macos-14          # Apple Silicon runner, native
 
     steps:
       - uses: actions/checkout@v4
