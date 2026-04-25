@@ -52,6 +52,57 @@ commit abc1234 — Add OAuth login
 …and `drift blame` still resolves any line back to its full timeline.
 See [`docs/VISION.md`](docs/VISION.md) for the broader thesis.
 
+## Why drift exists
+
+AI coding stopped being a single-agent workflow. A real session today
+looks more like this:
+
+- You start a feature in Claude Code, hit a rate limit or fill the
+  context window, and have to bail mid-task.
+- You move to Codex (or Aider, or another model), but the new agent
+  doesn't know which approaches you already tried, which decisions are
+  settled, and which were *deliberately* rejected.
+- You paste a chat transcript at the new agent. It's noisy, the agent
+  re-litigates settled questions, and you spend ten minutes
+  re-explaining what you wanted instead of moving forward.
+- A week later you review the commit and can't tell which lines came
+  from which agent, which were human edits on top of an AI suggestion,
+  or *why* the code took the shape it took.
+- Your teammate clones the repo and sees the code, but none of the
+  reasoning that produced it — that history lived in someone else's
+  Claude / Codex chat history, on someone else's laptop, and is now
+  effectively gone.
+
+`drift` turns that disposable AI trail into durable project memory:
+
+- **Capture, locally**: `drift capture` (and `drift watch` for live
+  mode) reads the session JSONL your agents already write under
+  `~/.claude/projects/` and `~/.codex/sessions/`. Nothing leaves your
+  machine except an optional Anthropic compaction call you can turn off.
+- **Compact, into markdown**: each session becomes a small markdown
+  summary in `.prompts/sessions/` — decisions kept, approaches
+  rejected, files touched. Cheap to read, cheap to grep, survives any
+  vendor migration because it's just text in your repo.
+- **Bind, to commits**: `drift bind` / `drift auto-bind` attaches each
+  session to the commit it produced via `git notes` (`refs/notes/drift`).
+  The link travels with the repo; it does not pollute commit history.
+- **Hand off, when you switch agents**: `drift handoff --branch <b> --to
+  <agent>` produces a brief the next agent can absorb cold — what's
+  done, what's open, what was already rejected, and where to resume.
+- **Reverse-lookup, when you forget**: `drift blame <file> [--line N]`
+  returns the full timeline behind a line of code: which session, which
+  prompt, which agent, plus the human edits that landed on top.
+- **Forward-lookup, when you remember the session but not the diff**:
+  `drift trace <session-id>` lists every `CodeEvent` that session
+  produced.
+- **Audit, across a release**: `drift log` is `git log` with a per-agent
+  summary under each commit — useful when you need to answer "how much
+  of this release was AI vs. human" without trusting LOC ratios.
+
+Net effect: multi-agent AI coding becomes something you can hand off,
+review, and reconstruct months later — instead of a chat history that
+disappears the next time you close a tab.
+
 ## Install
 
 **Homebrew** (macOS arm64/x86_64, Linux arm64/x86_64):

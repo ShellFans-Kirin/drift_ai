@@ -53,6 +53,58 @@ commit abc1234 — Add OAuth login
 プロジェクトの thesis は [`docs/VISION.md`](docs/VISION.md) を参照してくだ
 さい。
 
+## なぜ drift が必要なのか
+
+AI コーディングはもはや単一 agent のワークフローではありません。今日の現実
+的な開発 session はこんな感じです:
+
+- Claude Code で feature に取り掛かったが、途中で rate limit に当たる、ま
+  たは context window を使い切ってタスクを中断せざるを得ない。
+- Codex(または Aider、別の model)に切り替えるが、新しい agent はあなた
+  がすでに試した方法、固まった判断、*意図的に* 却下したアプローチを知らな
+  い。
+- chat の履歴を貼り付けると、ノイズが多く、agent は決着済みの議論を蒸し
+  返し、あなたは前に進む代わりに 10 分かけてやりたいことを再説明する羽
+  目になる。
+- 1 週間後に commit を review しても、どの行がどの agent から来たのか、
+  どこが AI 提案の上に乗った人間の編集なのか、なぜ code が最終的にこの形
+  になったのかが分からない。
+- 同僚が repo を clone すると code は見えるが、その code を生んだ推論プロ
+  セスは消えている — その履歴は誰かの Claude / Codex の chat に、誰かのラ
+  ップトップ上に存在し、実質的に失われている。
+
+`drift` はこの捨てられがちな AI の軌跡を、長期保存可能な project memory に
+変えます:
+
+- **ローカルで capture**:`drift capture`(および live mode 用の `drift watch`)
+  は、agent がもともと `~/.claude/projects/` や `~/.codex/sessions/` に書き
+  出している session JSONL を読みます。あなたがオフにできる任意の Anthropic
+  compaction 呼び出しを除き、データはマシンの外には出ません。
+- **markdown に圧縮**:各 session は `.prompts/sessions/` 配下の小さな
+  markdown 要約になります — 残った判断、却下された方法、触れたファイル。
+  読むのも grep するのも軽く、ベンダー移行でも失われません。repo の中の
+  ただのテキストだからです。
+- **commit に紐づけ**:`drift bind` / `drift auto-bind` が `git notes`
+  (`refs/notes/drift`)経由で、各 session をそれが生んだ commit に結び付け
+  ます。リンクは repo について移動し、commit history を汚しません。
+- **agent を切り替えるときの handoff**:`drift handoff --branch <b> --to
+  <agent>` は次の agent が初見で読み込める brief を作成します — 完了したこ
+  と、未解決のこと、却下済みのこと、どこから再開するか。
+- **忘れたときの逆引き**:`drift blame <file> [--line N]` は、その行の背後
+  にある完全なタイムラインを返します:どの session、どの prompt、どの agent、
+  そして上に乗った人間の編集。
+- **session は覚えているが diff を覚えていないときの順引き**:
+  `drift trace <session-id>` は、その session が生成したすべての `CodeEvent`
+  を列挙します。
+- **release をまたいだ audit**:`drift log` は `git log` で、各 commit の下
+  に per-agent サマリが付くもの — 「この release のうち、どれだけが AI で
+  どれだけが人間か」を LOC 比率の推測に頼らずに答える必要があるときに役に
+  立ちます。
+
+正味の効果:multi-agent な AI コーディングは、handoff でき、review でき、
+数ヶ月後に再構成できるものになります — 次に tab を閉じたら消える chat
+history ではなく。
+
 ## インストール
 
 **Homebrew**（macOS arm64/x86_64、Linux arm64/x86_64）：

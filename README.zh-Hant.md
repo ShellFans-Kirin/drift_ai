@@ -46,6 +46,47 @@ commit abc1234 — Add OAuth login
 …而 `drift blame` 仍然能把任意一行 code 還原成完整的 timeline。
 專案 thesis 見 [`docs/VISION.md`](docs/VISION.md)。
 
+## 為什麼需要 drift
+
+AI coding 已經不是單一 agent 的工作流了。今天一段真實的開發 session 比較像這樣:
+
+- 你在 Claude Code 上開了個 feature,做到一半被 rate limit 擋下,或 context
+  window 塞滿,不得不中斷。
+- 你切到 Codex(或 Aider、或別的 model),但新 agent 不知道你試過哪些做法、
+  哪些決策已經拍板、哪些 *刻意* 被駁回。
+- 你把 chat 貼過去給新 agent。資訊雜亂、agent 把已經結案的問題又拉出來討論,
+  你花十分鐘重新解釋想做的事,而不是繼續往前走。
+- 一週後 review commit,你分不出哪幾行是哪個 agent 寫的、哪些是人類在 AI
+  建議上加的編輯、code 為什麼最後長這樣。
+- 同事 clone repo 看到的是 code,但產生這份 code 的推理過程不見了 — 那段
+  歷史活在某個人的 Claude / Codex chat 裡、在某個人的筆電上,現在實質已經消失。
+
+`drift` 把這條本來會丟掉的 AI 軌跡轉成可長期保存的 project memory:
+
+- **本機 capture**:`drift capture`(以及 `drift watch` 走 live mode)讀你
+  agent 本來就會寫到 `~/.claude/projects/` 跟 `~/.codex/sessions/` 的 session
+  JSONL。除了你可以關掉的選用 Anthropic compaction 之外,沒有任何資料離開你
+  的機器。
+- **壓成 markdown**:每段 session 變成 `.prompts/sessions/` 下一份小的 markdown
+  摘要 — 留下的決策、被駁回的做法、改過的檔案。讀起來輕、grep 起來輕、跨 vendor
+  遷移也不會丟,因為這就只是 repo 裡的 text。
+- **綁到 commit**:`drift bind` / `drift auto-bind` 透過 `git notes`
+  (`refs/notes/drift`)把每段 session 綁到它產出的 commit。連結跟著 repo 走,
+  不污染 commit history。
+- **切 agent 時 handoff**:`drift handoff --branch <b> --to <agent>` 產一份
+  下一個 agent 能冷讀的 brief — 哪些做完、哪些還開著、哪些已經被駁回、從哪
+  裡接。
+- **忘記時反查**:`drift blame <file> [--line N]` 回傳那一行 code 背後的完整
+  timeline:哪個 session、哪個 prompt、哪個 agent,加上後續落上去的人類編輯。
+- **記得 session 不記得 diff 時順查**:`drift trace <session-id>` 列出該 session
+  產生的每筆 `CodeEvent`。
+- **跨 release 做 audit**:`drift log` 是 `git log` 但每個 commit 下面多一段
+  per-agent 摘要 — 要回答「這次 release 多少是 AI、多少是人類」而不靠 LOC
+  比例瞎猜時很有用。
+
+最終效果:multi-agent AI coding 變成可以 handoff、review、幾個月後還原得回來的
+東西 — 而不是下次關掉 tab 就消失的 chat history。
+
 ## 安裝
 
 **Homebrew**（macOS arm64/x86_64、Linux arm64/x86_64）：
