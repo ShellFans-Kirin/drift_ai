@@ -1,3 +1,5 @@
+> 🌐 [日本語](i18n/ja/USAGE.md) · [简体中文](i18n/zh-Hans/USAGE.md) · **繁體中文**
+
 # Drift AI · 使用方式（v0.2.0+）
 
 完整使用手冊。從零安裝到 `drift handoff`，每一步都附可複製的指令 + 範例輸出。

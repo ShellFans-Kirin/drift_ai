@@ -1,3 +1,5 @@
+> 🌐 **English** · [日本語](CHANGELOG.ja.md) · [简体中文](CHANGELOG.zh-Hans.md) · [繁體中文](CHANGELOG.zh-Hant.md)
+
 # Changelog
 
 All notable changes to drift_ai are documented here.

@@ -1,3 +1,5 @@
+> 🌐 **English** · [日本語](i18n/ja/COMPARISON.md) · [简体中文](i18n/zh-Hans/COMPARISON.md) · [繁體中文](i18n/zh-Hant/COMPARISON.md)
+
 # How `drift` compares
 
 This is a *functional* comparison — what a tool stores, where, and what

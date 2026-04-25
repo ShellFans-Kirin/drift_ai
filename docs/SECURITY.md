@@ -1,3 +1,5 @@
+> 🌐 **English** · [日本語](i18n/ja/SECURITY.md) · [简体中文](i18n/zh-Hans/SECURITY.md) · [繁體中文](i18n/zh-Hant/SECURITY.md)
+
 # Security & Privacy
 
 Drift AI is a local-first tool. The data it captures — your AI coding
