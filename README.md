@@ -3,21 +3,41 @@
 [![crates.io](https://img.shields.io/crates/v/drift-ai.svg)](https://crates.io/crates/drift-ai)
 [![CI](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml/badge.svg)](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml)
 
-> AI-native blame for the post-prompt era. Local-first.
+> Hand off your in-progress AI coding task between Claude, Codex, and
+> whatever agent you switch to next. Local-first.
 
-**Problem**: Your commit says *"Add OAuth login."* Your reality was 47 prompts
-to Claude + 3 Codex fills + 12 manual edits. Commit granularity can't tell
-that story. `drift` keeps every line tied to the prompt that produced it —
-locally, in your repo, forever.
+![drift handoff demo](docs/demo/v020-handoff.gif)
 
-`drift` watches the local session logs of your AI coding agents
-(Claude Code, Codex, Aider...), LLM-compacts each completed session,
-stores the result in `.prompts/` inside your git repo, **builds a
-line-level attribution layer that links every code event back to its
-originating prompt**, and binds each session to its matching commit
-via `git notes`.
+**The problem**: Your AI coding agent stalled — refused, rate-limited, or
+just got dumb. Now you need to transfer 30 minutes of context to another
+agent. Re-pasting a chat history doesn't work; the new agent doesn't
+know which decisions are settled, which approaches you already rejected,
+or which file you were halfway through.
 
-After installation, `drift log` shows multi-agent attribution per
+**`drift handoff`** packages your in-progress task into a markdown brief
+any LLM can absorb cold:
+
+```bash
+$ drift handoff --branch feature/oauth --to claude-code
+⚡ scanning .prompts/events.db
+⚡ extracting file snippets and rejected approaches
+⚡ compacting brief via claude-opus-4-7
+✅ written to .prompts/handoffs/2026-04-25-1530-feature-oauth-to-claude-code.md
+```
+
+The brief lists what you've decided, what you tried and rejected, what's
+open, and where to resume. Paste it into the next agent and they pick up
+mid-task without you re-explaining.
+
+`drift` is built on top of a v0.1 attribution engine that watches the
+local session logs of your AI coding agents (Claude Code, Codex,
+Aider...), LLM-compacts each completed session, stores the result in
+`.prompts/` inside your git repo, and binds each session to its matching
+commit via `git notes`. The handoff feature is the new (v0.2) wedge; the
+attribution engine is the (still-supported) `drift blame` / `drift log`
+side that powers it.
+
+After installation, `drift log` still shows multi-agent attribution per
 commit:
 
 ```
@@ -27,27 +47,8 @@ commit abc1234 — Add OAuth login
    ✋ [human]       2 manual edits
 ```
 
-…and `drift blame` resolves any line back to its full timeline:
-
-```
-src/auth/login.ts
-├─ 2026-04-15 14:03  💭 [claude-code] session abc12345
-│   --- a/src/auth/login.ts
-│   +++ b/src/auth/login.ts
-│   @@
-│   +if (attempts > 5) throw new RateLimitError()
-├─ 2026-04-15 15:20  ✋ [human]       post-commit manual edit
-│   -  if (attempts > 5)
-│   +  if (attempts > MAX_ATTEMPTS)
-└─ 2026-04-16 09:12  💭 [codex]       session def45678
-    +const MAX_ATTEMPTS = 5
-```
-
-The thesis: commit granularity is too coarse to be the source of truth
-in the AI era. drift_ai keeps prompts and the code they produce
-stitched together at the line level — across multiple agents, across
-human edits, across renames, and including the suggestions you
-rejected. See [`docs/VISION.md`](docs/VISION.md).
+…and `drift blame` still resolves any line back to its full timeline.
+See [`docs/VISION.md`](docs/VISION.md) for the broader thesis.
 
 ## Install
 
@@ -66,7 +67,7 @@ cargo install drift-ai
 **Pre-built binaries** (GitHub Releases):
 
 ```bash
-curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.1.2-$(uname -m)-unknown-linux-gnu.tar.gz \
+curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.2.0-$(uname -m)-unknown-linux-gnu.tar.gz \
   | tar xz -C /tmp && sudo mv /tmp/drift /usr/local/bin/drift
 drift --version
 ```
@@ -108,16 +109,21 @@ and roadmap.
 
 ## Quickstart
 
-Five commands, zero config:
+Six commands, zero config:
 
 ```bash
 cd your-git-repo
-drift init                               # scaffold .prompts/
-drift capture                            # pull sessions from ~/.claude + ~/.codex
-drift blame src/foo.rs                   # reverse lookup: who wrote what
-drift trace <session-id>                 # forward lookup: session → events
-drift install-hook                       # auto-run after each commit
+drift init                                          # scaffold .prompts/
+drift capture                                       # pull sessions from ~/.claude + ~/.codex
+drift handoff --branch feature/oauth --to claude   # NEW in v0.2 — task transfer
+drift blame src/foo.rs                              # reverse lookup: who wrote what
+drift trace <session-id>                            # forward lookup: session → events
+drift install-hook                                  # auto-run after each commit
 ```
+
+`drift handoff` is the v0.2 headline feature: package your in-progress
+task into a brief the next agent can absorb cold. See [§Handoff](#handoff--cross-agent-task-transfer-v02)
+for the full flow.
 
 Verified from `/tmp` with zero prior state:
 
@@ -125,6 +131,47 @@ Verified from `/tmp` with zero prior state:
 rm -rf /tmp/drift-smoke && mkdir -p /tmp/drift-smoke && cd /tmp/drift-smoke
 git init -q && git config user.email ""x@y"" && git config user.name x
 drift init && drift capture && drift list
+```
+
+## Handoff — cross-agent task transfer (v0.2)
+
+`drift handoff` reads your local `events.db` (built up by `drift capture`
+or `drift watch`), filters down to the sessions in the scope you ask
+for, and produces a markdown brief structured for handoff:
+
+- **What I'm working on** — 3-5 sentences of intent (LLM-compacted).
+- **Progress so far** — done / in-progress / not-started bullets.
+- **Files in scope** — modified ranges with ±5 lines of context.
+- **Key decisions** — with session+turn citations.
+- **Rejected approaches** — pre-extracted from session tool errors.
+- **Open questions / blockers**.
+- **Next steps**.
+- **How to continue** — the prompt to paste into the target agent.
+
+```bash
+# scope by branch (recommended): all sessions whose commits land on this
+# branch since it diverged from main
+drift handoff --branch feature/oauth --to claude-code
+
+# scope by time
+drift handoff --since 2026-04-25T08:00:00Z --to codex
+
+# single-session debug
+drift handoff --session abc12345-xxx --print
+
+# pipe to clipboard or another tool
+drift handoff --branch feature/oauth --print | pbcopy
+```
+
+The default model is `claude-opus-4-7` — the brief is what the next
+agent reads verbatim, so narrative quality matters more than for the
+per-session compaction in v0.1. Each handoff costs ≈ \$0.10–\$0.30 USD
+at Opus rates. To trade narrative for ~30× cost reduction, drop to
+Haiku in `.prompts/config.toml`:
+
+```toml
+[handoff]
+model = "claude-haiku-4-5"   # default is "claude-opus-4-7"
 ```
 
 ## Live mode — event-driven watcher
@@ -224,6 +271,7 @@ Tools are read-only by design — anything that mutates state
 | `drift init` | scaffold `.prompts/` + project config |
 | `drift capture` | one-shot: discover sessions, compact, attribute |
 | `drift watch` | background daemon, debounced re-capture |
+| `drift handoff [--branch B --to A --print --output P]` | **v0.2** — cross-agent task brief |
 | `drift list [--agent A]` | list captured sessions |
 | `drift show <id>` | render a compacted session |
 | `drift blame <file> [--line N] [--range A-B]` | **reverse lookup** |
@@ -253,9 +301,12 @@ codex = true
 aider = false             # feature-gated stub
 
 [compaction]
-provider = "anthropic"    # default; switch to "mock" for offline / testing
-model = "claude-haiku-4-5" # or claude-sonnet-4-6 / claude-opus-4-7
-# v0.2 will add: ollama, vllm, openai-compatible
+provider = "anthropic"      # default; switch to "mock" for offline / testing
+model = "claude-haiku-4-5"  # or claude-sonnet-4-6 / claude-opus-4-7
+
+[handoff]
+model = "claude-opus-4-7"   # narrative-quality is the value; switch to
+                            # "claude-haiku-4-5" for ~30x cost reduction
 ```
 
 `ANTHROPIC_API_KEY`: required for the live API compaction path. When
@@ -266,7 +317,7 @@ run for a real one — nothing else in the pipeline changes.
 How drift compares to Cursor / Copilot history, Cody, and `git blame`
 itself: [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
-## Honest limitations (v0.1.2)
+## Honest limitations (v0.2.0)
 
 - Human-edit detection is SHA-ladder only — we do not claim authorship,
   the `human` slug means "no AI session produced this". See VISION.md.
@@ -288,6 +339,10 @@ itself: [`docs/COMPARISON.md`](docs/COMPARISON.md).
 ([shellfans.dev](https://shellfans.dev)). It is **not** affiliated with
 Anthropic, OpenAI, or any other vendor whose agents it integrates with —
 `drift` is built *on top of* their session logs, not by them.
+
+> Originally built for myself when I kept losing context between Codex
+> stalls and Claude rate-limits. The v0.2 `drift handoff` feature is
+> the part I personally use most.
 
 ## License
 

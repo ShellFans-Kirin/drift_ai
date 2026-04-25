@@ -4,6 +4,80 @@ All notable changes to drift_ai are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-04-25
+
+The "you don't get locked into one LLM vendor" release. Adds
+**`drift handoff`** — the new headline command — and a v0.2-style
+README that puts task transfer at the front and demotes blame to a
+supporting feature.
+
+### Added
+
+- **`drift handoff` CLI**. Packages an in-progress task (filtered by
+  `--branch`, `--since`, or `--session`) into a markdown brief that
+  another agent can absorb cold. Flags: `--to claude-code|codex|generic`,
+  `--output <path>`, `--print`. Default output:
+  `.prompts/handoffs/<YYYY-MM-DD-HHMM>-<branch>-to-<agent>.md`.
+- **`crates/drift-core/src/handoff.rs`** — orchestrator + four small
+  collectors (sessions, events-by-file, rejected approaches, file
+  snippets) + LLM second pass + pure-Rust `render_brief`. New unit
+  tests cover scope parsing, snippet extraction (full vs. modified-range
+  excerpt), JSON-from-LLM parsing (with code-fence + surrounding-prose
+  tolerance), and per-`--to` footer rendering. 15 new tests.
+- **`crates/drift-core/templates/handoff.md`** — LLM prompt template
+  for the second pass; instructs the model to emit JSON with
+  `summary` / `progress` / `key_decisions` / `open_questions` /
+  `next_steps`.
+- **`AnthropicProvider::complete_async`** + sync `complete` — generic
+  system+user → text completion that re-uses `compact_async`'s
+  retry / streaming / token-usage machinery for callers that need an
+  LLM call with a different prompt shape (used by handoff). Returns a
+  new `LlmCompletion` struct (text + per-call token / cost).
+- **`[handoff]` config section** in `.prompts/config.toml`. Default
+  model `claude-opus-4-7`. The default is Opus — handoff briefs are
+  user-facing artifacts the next agent reads verbatim, narrative quality
+  is the value, and handoff frequency is low (a few per workday at
+  most). Users can drop to Haiku for ~30× cost reduction.
+- **30-second demo** at `docs/demo/v020-handoff.gif` (real recording
+  of `drift handoff` against fixture data; cast file at
+  `docs/demo/v020-handoff.cast`).
+- **Real-Anthropic smoke output** captured at
+  [`docs/V020-SMOKE-OUTPUT.md`](docs/V020-SMOKE-OUTPUT.md).
+- **`docs/V020-DESIGN.md`** — Phase 0 design proposal kept in repo as
+  reference for the `drift handoff` shape.
+
+### Changed
+
+- README first screen pivots to `drift handoff` as the headline,
+  with the demo GIF in the hero spot. The blame / log feature is
+  retained as a "supporting feature" reference in the same screen.
+- Quickstart bumped from 5 commands to 6 (added `drift handoff`).
+- About section adds a one-line dogfood-origin note.
+- Pre-built binary install URL bumped to `drift-v0.2.0`.
+
+### Stability guarantees carried from v0.1
+
+- `events.db` schema is **unchanged**. Upgrading from v0.1.x is a
+  pure binary swap; no migration required.
+- MCP tool list is **unchanged**. Existing MCP clients keep working.
+- `SessionConnector` trait is **unchanged**. Existing connectors
+  keep working.
+- The v0.1.2 first-run privacy notice still fires on first
+  `drift capture`; nothing to re-acknowledge for handoff.
+
+### Known limitations (v0.2)
+
+- `--branch <name>` scoping is best-effort: it asks `git log <branch>
+  --not main --format=%aI` for the earliest divergent commit and uses
+  that as a lower-bound filter. Sessions on multiple parallel branches
+  on the same day may bleed across — refine via `--since`.
+- The handoff LLM call has the cost profile of any Opus call (~$0.10
+  per brief). Heavy users should set `[handoff].model =
+  "claude-haiku-4-5"`.
+- No `drift handoff list` / `drift handoff show <id>` yet — generated
+  briefs are just markdown files in `.prompts/handoffs/`. `ls` and
+  `cat` is the v0.2 query interface.
+
 ## [0.1.2] — 2026-04-25
 
 Documentation + messaging patch on top of v0.1.1. The compaction /

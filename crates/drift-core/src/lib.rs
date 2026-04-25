@@ -12,14 +12,19 @@ pub mod compaction;
 pub mod config;
 pub mod diff;
 pub mod git;
+pub mod handoff;
 pub mod model;
 pub mod shell_lexer;
 pub mod store;
 
 pub use compaction::{
     compute_cost_usd, pricing_for, AnthropicProvider, CompactedSummary, CompactionError,
-    CompactionProvider, CompactionRes, CompactionResult, CompactionUsage, MockProvider,
-    ModelPricing,
+    CompactionProvider, CompactionRes, CompactionResult, CompactionUsage, LlmCompletion,
+    MockProvider, ModelPricing,
+};
+pub use handoff::{
+    build_handoff, render_brief, Decision, ExcerptKind, FileSnippet, HandoffBrief, HandoffOptions,
+    HandoffScope, ProgressItem, ProgressStatus, RejectedApproach, SessionSlim, TargetAgent,
 };
 pub use model::{
     AgentSlug, CodeEvent, NormalizedSession, Operation, Role, ToolCall, ToolResult, Turn,

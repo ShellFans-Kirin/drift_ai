@@ -5,6 +5,7 @@ pub mod capture;
 pub mod config;
 pub mod cost;
 pub mod diff;
+pub mod handoff;
 pub mod init;
 pub mod install_hook;
 pub mod list;

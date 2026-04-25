@@ -59,6 +59,28 @@ enum Command {
         by: Option<String>,
     },
 
+    /// Package an in-progress task into a handoff brief for another agent.
+    Handoff {
+        /// git branch to gather sessions for (recommended scope).
+        #[arg(long)]
+        branch: Option<String>,
+        /// ISO-8601 lower bound for session start (alternative to --branch).
+        #[arg(long)]
+        since: Option<String>,
+        /// Single session id (debugging / unit tests).
+        #[arg(long)]
+        session: Option<String>,
+        /// Target agent: claude-code | codex | generic.
+        #[arg(long, default_value = "claude-code")]
+        to: Option<String>,
+        /// Override the output path (default: .prompts/handoffs/<ts>-<branch>-to-<agent>.md).
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Write to stdout instead of a file (mutually exclusive with --output).
+        #[arg(long)]
+        print: bool,
+    },
+
     /// List captured sessions.
     List {
         #[arg(long)]
@@ -172,6 +194,22 @@ fn main() -> Result<()> {
             until.as_deref(),
             model.as_deref(),
             by.as_deref(),
+        ),
+        Command::Handoff {
+            branch,
+            since,
+            session,
+            to,
+            output,
+            print,
+        } => commands::handoff::run(
+            &repo,
+            branch.as_deref(),
+            since.as_deref(),
+            session.as_deref(),
+            to.as_deref(),
+            output.as_deref(),
+            print,
         ),
         Command::List { agent } => commands::list::run(&repo, agent.as_deref()),
         Command::Show { session_id } => commands::show::run(&repo, &session_id),

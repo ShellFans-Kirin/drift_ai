@@ -521,6 +521,242 @@ impl AnthropicProvider {
             }),
         })
     }
+
+    /// Generic system+user → text completion against the same Messages API
+    /// the compactor uses. Re-exposes the streaming + retry + token-usage
+    /// machinery for callers (like `drift handoff`) that need an LLM
+    /// second-pass with a different prompt shape.
+    ///
+    /// Same retry policy as `compact_async`: 5× for 429 honouring
+    /// `Retry-After`, 4× for 5xx with exponential backoff, instant-fail for
+    /// 401 / 404. Returns the accumulated text plus token-usage.
+    pub async fn complete_async(&self, system: &str, user: &str) -> CompactionRes<LlmCompletion> {
+        let pricing = pricing_for(&self.model);
+        let estimated_tokens = estimate_tokens(system) + estimate_tokens(user);
+        if estimated_tokens > pricing.context_window {
+            return Err(CompactionError::ContextTooLong {
+                tokens: estimated_tokens,
+                limit: pricing.context_window,
+            });
+        }
+
+        let url = format!("{}/v1/messages", self.base_url);
+        let body = serde_json::json!({
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "stream": true,
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+        });
+
+        let mut attempts = 0u32;
+        let max_attempts = 5;
+        loop {
+            attempts += 1;
+            let resp = self
+                .http
+                .post(&url)
+                .header("x-api-key", &self.api_key)
+                .header("anthropic-version", "2023-06-01")
+                .header("content-type", "application/json")
+                .json(&body)
+                .send()
+                .await;
+
+            let resp = match resp {
+                Ok(r) => r,
+                Err(e) => {
+                    if attempts >= max_attempts || !e.is_timeout() && !e.is_connect() {
+                        return Err(CompactionError::TransientNetwork(e));
+                    }
+                    tokio::time::sleep(backoff(attempts)).await;
+                    continue;
+                }
+            };
+
+            let status = resp.status();
+            if status.is_success() {
+                return self.consume_stream_text(resp).await;
+            }
+
+            let retry_after = parse_retry_after(resp.headers());
+            let body_text = resp.text().await.unwrap_or_default();
+
+            if status.as_u16() == 401 {
+                return Err(CompactionError::AuthInvalid);
+            }
+            if status.as_u16() == 404 && body_text.to_lowercase().contains("model") {
+                return Err(CompactionError::ModelNotFound(self.model.clone()));
+            }
+            if status.as_u16() == 429 {
+                if attempts >= max_attempts {
+                    return Err(CompactionError::RateLimited { retry_after });
+                }
+                let wait = retry_after.unwrap_or_else(|| backoff(attempts));
+                tokio::time::sleep(wait).await;
+                continue;
+            }
+            if status.as_u16() == 400 && body_text.to_lowercase().contains("context") {
+                return Err(CompactionError::ContextTooLong {
+                    tokens: estimated_tokens,
+                    limit: pricing.context_window,
+                });
+            }
+            if status.is_server_error() {
+                if attempts >= 4 {
+                    return Err(CompactionError::Other(anyhow::anyhow!(
+                        "Anthropic server error {}: {}",
+                        status,
+                        body_text
+                    )));
+                }
+                tokio::time::sleep(backoff(attempts)).await;
+                continue;
+            }
+
+            return Err(CompactionError::Other(anyhow::anyhow!(
+                "unexpected Anthropic response {}: {}",
+                status,
+                body_text
+            )));
+        }
+    }
+
+    /// Sync wrapper around [`complete_async`].
+    pub fn complete(&self, system: &str, user: &str) -> CompactionRes<LlmCompletion> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| CompactionError::Other(anyhow::anyhow!(e)))?;
+        rt.block_on(self.complete_async(system, user))
+    }
+
+    /// Stream consumer that returns raw accumulated text + usage. Used by
+    /// `complete_async`. Same SSE-event handling as [`consume_stream`] but
+    /// without the markdown-section parsing on the way out.
+    async fn consume_stream_text(&self, resp: reqwest::Response) -> CompactionRes<LlmCompletion> {
+        let mut stream = resp.bytes_stream();
+        let mut buf: Vec<u8> = Vec::with_capacity(8192);
+        let mut accumulated = String::new();
+        let mut input_tokens: u32 = 0;
+        let mut output_tokens: u32 = 0;
+        let mut cache_c: u32 = 0;
+        let mut cache_r: u32 = 0;
+        let mut message_done = false;
+
+        while let Some(chunk) = stream.next().await {
+            let bytes = chunk.map_err(CompactionError::TransientNetwork)?;
+            buf.extend_from_slice(&bytes);
+
+            while let Some(idx) = find_double_newline(&buf) {
+                let event_bytes: Vec<u8> = buf.drain(..idx + 2).collect();
+                let event_str = String::from_utf8_lossy(&event_bytes);
+                for line in event_str.lines() {
+                    if let Some(rest) = line.strip_prefix("data:") {
+                        let data = rest.trim();
+                        if data.is_empty() {
+                            continue;
+                        }
+                        if data == "[DONE]" {
+                            message_done = true;
+                            continue;
+                        }
+                        let v: serde_json::Value = match serde_json::from_str(data) {
+                            Ok(v) => v,
+                            Err(e) => {
+                                return Err(CompactionError::Stream(format!(
+                                    "bad JSON in SSE data: {} / {}",
+                                    e, data
+                                )));
+                            }
+                        };
+                        let ty = v.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                        match ty {
+                            "message_start" => {
+                                if let Some(u) = v.pointer("/message/usage") {
+                                    input_tokens =
+                                        u.get("input_tokens").and_then(|x| x.as_u64()).unwrap_or(0)
+                                            as u32;
+                                    cache_c = u
+                                        .get("cache_creation_input_tokens")
+                                        .and_then(|x| x.as_u64())
+                                        .unwrap_or(0)
+                                        as u32;
+                                    cache_r = u
+                                        .get("cache_read_input_tokens")
+                                        .and_then(|x| x.as_u64())
+                                        .unwrap_or(0)
+                                        as u32;
+                                }
+                            }
+                            "content_block_delta" => {
+                                if let Some(text) =
+                                    v.pointer("/delta/text").and_then(|t| t.as_str())
+                                {
+                                    accumulated.push_str(text);
+                                    progress_chunk(self.progress_to_stderr, text);
+                                }
+                            }
+                            "message_delta" => {
+                                if let Some(ot) =
+                                    v.pointer("/usage/output_tokens").and_then(|x| x.as_u64())
+                                {
+                                    output_tokens = ot as u32;
+                                }
+                            }
+                            "message_stop" => {
+                                message_done = true;
+                            }
+                            "error" => {
+                                let msg = v
+                                    .pointer("/error/message")
+                                    .and_then(|s| s.as_str())
+                                    .unwrap_or("unknown streaming error");
+                                return Err(CompactionError::Stream(msg.to_string()));
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+
+        if self.progress_to_stderr {
+            let _ = writeln!(std::io::stderr());
+        }
+
+        if !message_done {
+            return Err(CompactionError::Stream(
+                "stream ended without message_stop".into(),
+            ));
+        }
+
+        let cost = compute_cost_usd(&self.model, input_tokens, output_tokens, cache_c, cache_r);
+        Ok(LlmCompletion {
+            text: accumulated,
+            model: self.model.clone(),
+            input_tokens,
+            output_tokens,
+            cache_creation_tokens: cache_c,
+            cache_read_tokens: cache_r,
+            cost_usd: cost,
+        })
+    }
+}
+
+/// Result of a generic LLM completion via [`AnthropicProvider::complete`].
+/// Mirrors [`CompactionUsage`] but without the per-session binding —
+/// `drift handoff` aggregates across sessions, so a single-session_id
+/// field doesn't fit.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmCompletion {
+    pub text: String,
+    pub model: String,
+    pub input_tokens: u32,
+    pub output_tokens: u32,
+    pub cache_creation_tokens: u32,
+    pub cache_read_tokens: u32,
+    pub cost_usd: f64,
 }
 
 impl CompactionProvider for AnthropicProvider {

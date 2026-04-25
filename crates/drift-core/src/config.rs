@@ -16,6 +16,8 @@ pub struct DriftConfig {
     #[serde(default)]
     pub compaction: CompactionConfig,
     #[serde(default)]
+    pub handoff: HandoffConfig,
+    #[serde(default)]
     pub sync: SyncConfig,
 }
 
@@ -25,6 +27,7 @@ impl Default for DriftConfig {
             attribution: AttributionConfig::default(),
             connectors: ConnectorsConfig::default(),
             compaction: CompactionConfig::default(),
+            handoff: HandoffConfig::default(),
             sync: SyncConfig::default(),
         }
     }
@@ -74,6 +77,28 @@ impl Default for CompactionConfig {
             provider: None,
         }
     }
+}
+
+/// Settings for `drift handoff` (v0.2.0+). Currently only the Anthropic
+/// model is configurable. Default `claude-opus-4-7` because the brief
+/// is a user-facing artifact the next agent reads verbatim — narrative
+/// quality matters here far more than for per-session compaction.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HandoffConfig {
+    #[serde(default = "default_handoff_model")]
+    pub model: String,
+}
+
+impl Default for HandoffConfig {
+    fn default() -> Self {
+        Self {
+            model: default_handoff_model(),
+        }
+    }
+}
+
+fn default_handoff_model() -> String {
+    "claude-opus-4-7".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
