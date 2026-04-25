@@ -1,0 +1,6 @@
+#!/bin/sh
+if grep -qiE "(Co-Authored-By:.*[Cc]laude|Co-Authored-By:.*anthropic|Generated with.*Claude Code|🤖 Generated)" "$1"; then
+  echo "❌ Commit blocked: Claude attribution detected in message." >&2
+  echo "   Please remove Co-Authored-By / Generated with lines." >&2
+  exit 1
+fi
