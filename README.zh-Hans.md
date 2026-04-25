@@ -50,8 +50,8 @@ commit abc1234 — Add OAuth login
 
 AI coding 已经不是单一 agent 的工作流了。今天一段真实的开发 session 比较像这样:
 
-- 你在 Claude Code 上开了个 feature，做到一半被 rate limit 挡下，或 context
-  window 塞满，不得不中断。
+- 你在 Claude Code 上开了个 feature，写到一半遇到 rate limit、或 context
+  window 塞满，或者你发现 LLM 突然 **变蠢** 了，被迫中途放弃。
 - 你切到 Codex（或 Aider、或别的 model），但新 agent 不知道你试过哪些做法、
   哪些决策已经定了、哪些是 *刻意* 被驳回的。
 - 你把 chat 贴过去给新 agent。信息嘈杂、agent 把已经定案的问题又拉出来讨论，

@@ -58,8 +58,9 @@ commit abc1234 — Add OAuth login
 AI コーディングはもはや単一 agent のワークフローではありません。今日の現実
 的な開発 session はこんな感じです:
 
-- Claude Code で feature に取り掛かったが、途中で rate limit に当たる、ま
-  たは context window を使い切ってタスクを中断せざるを得ない。
+- Claude Code で feature に取り掛かったが、rate limit に当たる、context
+  window を使い切る、あるいは LLM が急に **バカになった** と感じて、途中で
+  作業を諦めざるを得ない。
 - Codex(または Aider、別の model)に切り替えるが、新しい agent はあなた
   がすでに試した方法、固まった判断、*意図的に* 却下したアプローチを知らな
   い。

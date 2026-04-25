@@ -57,8 +57,9 @@ See [`docs/VISION.md`](docs/VISION.md) for the broader thesis.
 AI coding stopped being a single-agent workflow. A real session today
 looks more like this:
 
-- You start a feature in Claude Code, hit a rate limit or fill the
-  context window, and have to bail mid-task.
+- You start a feature in Claude Code, you start developing a feature,
+  but encounter rate limits or a full context window, or then you find
+  that LLMs have **become stupid**, forcing you to quit halfway through.
 - You move to Codex (or Aider, or another model), but the new agent
   doesn't know which approaches you already tried, which decisions are
   settled, and which were *deliberately* rejected.
