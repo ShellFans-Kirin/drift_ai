@@ -23,6 +23,16 @@ use std::io::Write as _;
 use std::time::Duration;
 use thiserror::Error;
 
+// v0.3+ providers + shared streaming helpers live in submodules so the v0.2
+// Anthropic + Mock code path stays exactly as it shipped. Each new provider
+// implements `CompactionProvider` (defined below) the same way Anthropic does.
+pub mod factory;
+pub mod gemini;
+pub mod ollama;
+pub mod openai;
+pub mod openai_compat;
+pub mod streaming;
+
 // ---------------------------------------------------------------------------
 // Errors + Usage + Result
 // ---------------------------------------------------------------------------
@@ -878,7 +888,7 @@ fn prompt_too_long(tokens: u32, window: u32) -> Option<u32> {
 // Response parsing (loose markdown → CompactedSummary)
 // ---------------------------------------------------------------------------
 
-fn parse_summary_markdown(
+pub(crate) fn parse_summary_markdown(
     md: &str,
     session_id: &str,
     agent_slug: AgentSlug,
@@ -1048,7 +1058,7 @@ fn find_double_newline(buf: &[u8]) -> Option<usize> {
     buf.windows(2).position(|w| w == b"\n\n")
 }
 
-fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
+pub(crate) fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
     let v = headers.get(reqwest::header::RETRY_AFTER)?;
     let s = v.to_str().ok()?;
     if let Ok(secs) = s.parse::<u64>() {
@@ -1058,7 +1068,7 @@ fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
     None
 }
 
-fn backoff(attempt: u32) -> Duration {
+pub(crate) fn backoff(attempt: u32) -> Duration {
     let secs = 2u64.pow(attempt.saturating_sub(1).min(6));
     Duration::from_secs(secs)
 }
