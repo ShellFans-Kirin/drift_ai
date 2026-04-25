@@ -7,7 +7,8 @@ use drift_core::compaction::{
     summary_to_markdown, AnthropicProvider, CompactionProvider, MockProvider,
 };
 use drift_core::config;
-use std::path::Path;
+use std::io::{BufRead as _, Write as _};
+use std::path::{Path, PathBuf};
 
 pub fn run(
     repo: &Path,
@@ -15,6 +16,7 @@ pub fn run(
     agent_filter: Option<&str>,
     all_since: Option<&str>,
 ) -> Result<()> {
+    maybe_show_first_run_notice()?;
     super::init::run(repo).ok(); // ensure .prompts/ exists
     let store = open_store(repo)?;
     let connectors = default_connectors();
@@ -135,4 +137,125 @@ fn select_provider(cfg: &drift_core::config::DriftConfig) -> Box<dyn CompactionP
         }
     }
     Box::new(MockProvider)
+}
+
+// ---------------------------------------------------------------------------
+// First-run privacy notice (v0.1.2)
+// ---------------------------------------------------------------------------
+//
+// drift mirrors raw session content (including anything the user may have
+// pasted into Claude/Codex chat) into .prompts/ and, by default, commits
+// events.db to git. The first time a user runs `drift capture`, we print a
+// one-shot reminder of this and wait for an interactive Enter so they cannot
+// claim they were not told.
+//
+// Bypass for CI / scripted callers: set DRIFT_SKIP_FIRST_RUN=1. Doing so
+// does NOT mark the notice as shown, because a CI bypass should not silence
+// the warning for a later interactive run on the same workstation.
+
+const NOTICE_BODY: &str = "\
+drift capture · first-run notice
+  drift mirrors your AI session content (including anything you
+  pasted) into .prompts/. events.db is committed to git by default.
+  See docs/SECURITY.md for the full story.
+
+  Press Enter to continue, Ctrl-C to abort.";
+
+pub(crate) fn maybe_show_first_run_notice() -> Result<()> {
+    if std::env::var("DRIFT_SKIP_FIRST_RUN").is_ok_and(|v| !v.is_empty()) {
+        return Ok(());
+    }
+    let path = first_run_state_path();
+    if first_run_already_shown(path.as_deref()) {
+        return Ok(());
+    }
+    let mut stderr = std::io::stderr();
+    writeln!(stderr, "{}", NOTICE_BODY).ok();
+    stderr.flush().ok();
+    let mut buf = String::new();
+    let stdin = std::io::stdin();
+    stdin
+        .lock()
+        .read_line(&mut buf)
+        .context("read stdin for first-run notice acknowledgement")?;
+    if let Some(p) = path {
+        write_first_run_state(&p)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn first_run_state_path() -> Option<PathBuf> {
+    dirs::config_dir().map(|d| d.join("drift").join("state.toml"))
+}
+
+pub(crate) fn first_run_already_shown(path: Option<&Path>) -> bool {
+    let Some(p) = path else { return false };
+    let Ok(text) = std::fs::read_to_string(p) else {
+        return false;
+    };
+    text.lines()
+        .any(|l| l.trim_start().starts_with("first_capture_shown") && l.contains("true"))
+}
+
+pub(crate) fn write_first_run_state(p: &Path) -> Result<()> {
+    if let Some(parent) = p.parent() {
+        std::fs::create_dir_all(parent).with_context(|| format!("create {}", parent.display()))?;
+    }
+    std::fs::write(p, "first_capture_shown = true\n")
+        .with_context(|| format!("write first-run state to {}", p.display()))?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skip_env_var_bypasses_notice() {
+        // With DRIFT_SKIP_FIRST_RUN=1 set, maybe_show_first_run_notice returns
+        // Ok(()) without ever blocking on stdin. Run inside a tempdir to
+        // isolate state.toml.
+        let tmp = tempfile::tempdir().unwrap();
+        let prior = std::env::var("DRIFT_SKIP_FIRST_RUN").ok();
+        let prior_xdg = std::env::var("XDG_CONFIG_HOME").ok();
+        std::env::set_var("DRIFT_SKIP_FIRST_RUN", "1");
+        std::env::set_var("XDG_CONFIG_HOME", tmp.path());
+        let res = maybe_show_first_run_notice();
+        // restore env regardless of outcome
+        match prior {
+            Some(v) => std::env::set_var("DRIFT_SKIP_FIRST_RUN", v),
+            None => std::env::remove_var("DRIFT_SKIP_FIRST_RUN"),
+        }
+        match prior_xdg {
+            Some(v) => std::env::set_var("XDG_CONFIG_HOME", v),
+            None => std::env::remove_var("XDG_CONFIG_HOME"),
+        }
+        assert!(res.is_ok(), "skip env should bypass cleanly: {:?}", res);
+        // And we did NOT mark first_capture_shown — a later interactive run
+        // on the same machine still gets the notice.
+        let state = tmp.path().join("drift").join("state.toml");
+        assert!(
+            !state.exists(),
+            "DRIFT_SKIP_FIRST_RUN must not write state.toml (would silence later interactive runs)"
+        );
+    }
+
+    #[test]
+    fn already_shown_predicate_reads_state() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("state.toml");
+        assert!(!first_run_already_shown(Some(&p)));
+        write_first_run_state(&p).unwrap();
+        assert!(first_run_already_shown(Some(&p)));
+        let body = std::fs::read_to_string(&p).unwrap();
+        assert!(body.contains("first_capture_shown = true"));
+    }
+
+    #[test]
+    fn write_state_creates_parent_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("nested").join("dir").join("state.toml");
+        write_first_run_state(&p).unwrap();
+        assert!(p.exists());
+    }
 }

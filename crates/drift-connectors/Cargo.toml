@@ -11,7 +11,7 @@ description = "Session connectors for Drift AI: Claude Code, Codex, and Aider (s
 readme = "README.md"
 
 [dependencies]
-drift-core = { path = "../drift-core", version = "0.1.1" }
+drift-core = { path = "../drift-core", version = "0.1.2" }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true

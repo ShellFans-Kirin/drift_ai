@@ -1,6 +1,14 @@
 # drift_ai
 
+[![crates.io](https://img.shields.io/crates/v/drift-ai.svg)](https://crates.io/crates/drift-ai)
+[![CI](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml/badge.svg)](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml)
+
 > AI-native blame for the post-prompt era. Local-first.
+
+**Problem**: Your commit says *"Add OAuth login."* Your reality was 47 prompts
+to Claude + 3 Codex fills + 12 manual edits. Commit granularity can't tell
+that story. `drift` keeps every line tied to the prompt that produced it —
+locally, in your repo, forever.
 
 `drift` watches the local session logs of your AI coding agents
 (Claude Code, Codex, Aider...), LLM-compacts each completed session,
@@ -58,7 +66,7 @@ cargo install drift-ai
 **Pre-built binaries** (GitHub Releases):
 
 ```bash
-curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.1.1-$(uname -m)-unknown-linux-gnu.tar.gz \
+curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.1.2-$(uname -m)-unknown-linux-gnu.tar.gz \
   | tar xz -C /tmp && sudo mv /tmp/drift /usr/local/bin/drift
 drift --version
 ```
@@ -70,6 +78,33 @@ git clone https://github.com/ShellFans-Kirin/drift_ai.git
 cd drift_ai
 cargo install --path crates/drift-cli
 ```
+
+## Privacy & secrets
+
+`drift` does **not** scrub session content. Anything you typed into your
+Claude Code / Codex session — including secrets you may have pasted —
+will be mirrored into `.prompts/` and, by default, committed to your repo.
+
+Two knobs today:
+
+1. Set `[attribution].db_in_git = false` in `.prompts/config.toml` to
+   keep `events.db` local only.
+2. Review `.prompts/sessions/` before `git add`.
+
+`v0.2` will add a regex-based redaction pass. For full coverage today,
+pair `drift` with [gitleaks](https://github.com/gitleaks/gitleaks) or
+[trufflehog](https://github.com/trufflesecurity/trufflehog) as a
+pre-commit hook.
+
+> **If you routinely paste secrets into AI sessions, wait for `v0.2`
+> before enabling `drift` on shared repos.**
+
+The first time you run `drift capture`, you'll see a one-shot notice
+restating the above; press Enter to acknowledge. Set
+`DRIFT_SKIP_FIRST_RUN=1` to suppress in CI.
+
+See [`docs/SECURITY.md`](docs/SECURITY.md) for the full threat model
+and roadmap.
 
 ## Quickstart
 
@@ -218,8 +253,9 @@ codex = true
 aider = false             # feature-gated stub
 
 [compaction]
-provider = "anthropic"    # default; set to "mock" to run offline
-model = "claude-opus-4-7" # or claude-sonnet-4-6 / claude-haiku-4-5
+provider = "anthropic"    # default; switch to "mock" for offline / testing
+model = "claude-haiku-4-5" # or claude-sonnet-4-6 / claude-opus-4-7
+# v0.2 will add: ollama, vllm, openai-compatible
 ```
 
 `ANTHROPIC_API_KEY`: required for the live API compaction path. When
@@ -227,7 +263,10 @@ it's unset, drift_ai transparently falls back to `MockProvider` and
 every summary is labelled `[MOCK]` so you never mistake a fallback
 run for a real one — nothing else in the pipeline changes.
 
-## Honest limitations (v0.1.1)
+How drift compares to Cursor / Copilot history, Cody, and `git blame`
+itself: [`docs/COMPARISON.md`](docs/COMPARISON.md).
+
+## Honest limitations (v0.1.2)
 
 - Human-edit detection is SHA-ladder only — we do not claim authorship,
   the `human` slug means "no AI session produced this". See VISION.md.
@@ -241,6 +280,14 @@ run for a real one — nothing else in the pipeline changes.
 - Context-window truncation is deterministic head+tail elision
   (Strategy 1); hierarchical summarization (Strategy 2) is stubbed
   behind a feature flag for v0.2.
+
+## About
+
+`drift` is an independent open-source project by
+[@ShellFans-Kirin](https://github.com/ShellFans-Kirin)
+([shellfans.dev](https://shellfans.dev)). It is **not** affiliated with
+Anthropic, OpenAI, or any other vendor whose agents it integrates with —
+`drift` is built *on top of* their session logs, not by them.
 
 ## License
 

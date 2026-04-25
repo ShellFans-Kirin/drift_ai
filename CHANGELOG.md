@@ -4,6 +4,46 @@ All notable changes to drift_ai are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-04-25
+
+Documentation + messaging patch on top of v0.1.1. The compaction /
+attribution / MCP code paths are unchanged from v0.1.1; the only
+behavioural change is a one-shot privacy notice the first time a
+user runs `drift capture`.
+
+### Added
+- **`docs/SECURITY.md`** — threat model, current limitations, available
+  mitigations (db_in_git toggle, manual review, gitleaks/trufflehog
+  pre-commit), v0.2 roadmap (regex redaction pass, interactive review
+  mode, `drift redact` post-hoc scrub), security-disclosure channel.
+- **README `## Privacy & secrets` section** — explicit, non-soft-sold
+  disclosure that `drift capture` mirrors session content into
+  `.prompts/` and commits `events.db` to git by default.
+- **`drift capture` first-run notice** — the first invocation prints a
+  one-paragraph reminder of the privacy posture and waits on stdin.
+  Bypass via `DRIFT_SKIP_FIRST_RUN=1` (CI-friendly). State is recorded
+  at `~/.config/drift/state.toml::first_capture_shown`.
+- **`docs/COMPARISON.md`** — functional comparison vs Cursor /
+  Copilot chat / Cody / `git blame`. Linked from README.
+- **README pain-statement opener** — one paragraph ("47 prompts to
+  Claude + 3 Codex fills + 12 manual edits ...") above the
+  technical description.
+- **README `## About` section** — explicit declaration that drift is
+  independent and not affiliated with Anthropic, OpenAI, or any other
+  agent vendor.
+- **README badges**: crates.io version + CI status (capped at two).
+- **Provider-switching example** in `## Configuration` that names the
+  v0.2 plan (ollama / vllm / openai-compatible).
+
+### Tests
+- `tests/first_run_notice.rs` covers `DRIFT_SKIP_FIRST_RUN=1` bypass
+  and the state-file persistence path.
+
+### Known limitations carried from v0.1.1
+- Drift still does not actively redact secrets — that is v0.2 work.
+- Cost pricing table is hardcoded; verify against Anthropic's public
+  pricing before billing reports.
+
 ## [0.1.1] — 2026-04-23
 
 ### Added
