@@ -70,7 +70,7 @@ enum Command {
         /// Single session id (debugging / unit tests).
         #[arg(long)]
         session: Option<String>,
-        /// Target agent: claude-code | codex | generic.
+        /// Target agent: claude-code | codex | cursor | aider | generic.
         #[arg(long, default_value = "claude-code")]
         to: Option<String>,
         /// Override the output path (default: .prompts/handoffs/<ts>-<branch>-to-<agent>.md).

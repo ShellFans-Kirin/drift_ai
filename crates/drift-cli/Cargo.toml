@@ -17,9 +17,9 @@ name = "drift"
 path = "src/main.rs"
 
 [dependencies]
-drift-core = { path = "../drift-core", version = "0.4.0" }
-drift-connectors = { path = "../drift-connectors", version = "0.4.0" }
-drift-mcp = { path = "../drift-mcp", version = "0.4.0" }
+drift-core = { path = "../drift-core", version = "0.4.1" }
+drift-connectors = { path = "../drift-connectors", version = "0.4.1" }
+drift-mcp = { path = "../drift-mcp", version = "0.4.1" }
 anyhow.workspace = true
 clap.workspace = true
 serde.workspace = true

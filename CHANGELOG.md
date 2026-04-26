@@ -6,6 +6,46 @@ All notable changes to drift_ai are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-04-26
+
+Doc-only patch on top of v0.4.0. The compaction / attribution / connector
+code paths are unchanged from v0.4.0; only the CLI help text changes.
+
+### Fixed
+
+- `drift handoff --help` now lists `cursor` and `aider` as valid `--to`
+  values. The runtime parser already accepted them in v0.4.0
+  ([`TargetAgent::parse`](crates/drift-core/src/handoff.rs)), but the
+  clap doc comment in `crates/drift-cli/src/main.rs` had been left at
+  the v0.2 list of `claude-code | codex | generic`. No behaviour change
+  for callers that knew the value already worked.
+
+### Real Mac brew install verification (the actual reason this patch exists)
+
+v0.4.0's ship gate was missing one entry: nobody had run
+`brew install ShellFans-Kirin/drift/drift` on a real macOS host. After
+v0.4.0 shipped, the verification was run via SSH to a Mac mini (Apple
+M4 / macOS 26.3.1 / Homebrew 5.1.7); install + smoke + uninstall all
+green. The smoke surfaced the `--help` regression above, which is what
+this patch fixes.
+
+Real Mac smoke results (v0.4.0):
+
+| Step | Result |
+|---|---|
+| `brew tap ShellFans-Kirin/drift` | ✓ |
+| `brew install drift` | ✓ 7.8 s, 7.1 MB at `/opt/homebrew/Cellar/drift/0.4.0` |
+| `drift --version` | ✓ `drift 0.4.0` |
+| `drift mcp` initialize handshake | ✓ `serverInfo.version=0.4.0` |
+| Binary integrity | ✓ Mach-O thin arm64, ad-hoc codesigned |
+| `drift handoff --to cursor --print` runtime | ✓ accepted (footer correct) |
+| `drift handoff --to aider --print` runtime | ✓ accepted (footer correct) |
+| Cleanup (`uninstall` + `untap`) | ✓ no residue |
+
+This patch's release goes through the same gate end-to-end on Mac, so
+v0.4.1 is the first version that's been *fully* verified on macOS at
+the brew-install level.
+
 ## [0.4.0] — 2026-04-25
 
 The "vendor-neutral" release. Merges what was originally planned as v0.3
