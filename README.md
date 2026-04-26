@@ -5,10 +5,14 @@
 [![crates.io](https://img.shields.io/crates/v/drift-ai.svg)](https://crates.io/crates/drift-ai)
 [![CI](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml/badge.svg)](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml)
 
-> Hand off your in-progress AI coding task between Claude, Codex, and
-> whatever agent you switch to next. Local-first.
+> Vendor-neutral handoff for AI coding tasks.
+> Works with Claude, GPT, Gemini, DeepSeek, and any local LLM.
+> Reads sessions from Claude Code, Codex, Cursor, and Aider.
+> Local-first.
 
-![drift handoff demo](docs/demo/v020-handoff.gif)
+![drift handoff bidirectional](docs/demo/v040-handoff-bidirectional.gif)
+![drift multi-LLM cost comparison](docs/demo/v040-multi-llm-comparison.gif)
+![drift Cursor → Claude Code handoff](docs/demo/v040-cursor-handoff.gif)
 
 **The problem**: Your AI coding agent stalled — refused, rate-limited, or
 just got dumb. Now you need to transfer 30 minutes of context to another
@@ -121,7 +125,7 @@ cargo install drift-ai
 **Pre-built binaries** (GitHub Releases):
 
 ```bash
-curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.2.0-$(uname -m)-unknown-linux-gnu.tar.gz \
+curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.4.0-$(uname -m)-unknown-linux-gnu.tar.gz \
   | tar xz -C /tmp && sudo mv /tmp/drift /usr/local/bin/drift
 drift --version
 ```
@@ -371,7 +375,7 @@ run for a real one — nothing else in the pipeline changes.
 How drift compares to Cursor / Copilot history, Cody, and `git blame`
 itself: [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
-## Honest limitations (v0.2.0)
+## Honest limitations (v0.4.0)
 
 - Human-edit detection is SHA-ladder only — we do not claim authorship,
   the `human` slug means "no AI session produced this". See VISION.md.

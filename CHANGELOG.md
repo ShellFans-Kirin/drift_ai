@@ -6,6 +6,121 @@ All notable changes to drift_ai are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-04-25
+
+The "vendor-neutral" release. Merges what was originally planned as v0.3
+(multi-LLM provider) and v0.4 (multi-agent connector) into a single ship,
+because half the story isn't a story. After v0.4 you can hand off
+between any combination of **{Claude Code, Codex, Cursor, Aider}** as
+the *source* and any of **{Anthropic, OpenAI, Gemini, DeepSeek, local
+Ollama, anything OpenAI-compatible}** as the *LLM doing the brief*.
+
+### Added — Multi-LLM provider (v0.3 part)
+
+- **`OpenAIProvider`**: gpt-5 / gpt-4o / o1 / o3 series. SSE streaming
+  via the shared `compaction::streaming::for_each_sse_data`. Reasoning
+  tokens (o1/o3) folded into output tokens for billing transparency.
+  Built-in price table for current model SKUs.
+- **`GeminiProvider`**: Google AI Studio
+  (`generativelanguage.googleapis.com`). API key as URL query param,
+  `systemInstruction` at top-level, `:streamGenerateContent?alt=sse`
+  endpoint. Sends `thinkingConfig.thinkingBudget = 0` so 2.5-flash's
+  hidden reasoning doesn't drain the visible output budget.
+- **`OllamaProvider`**: local LLM at `http://localhost:11434/api/chat`.
+  NDJSON streaming (one JSON per line, not SSE). Cost is always $0.
+  Surfaces a friendly `Ollama is not running. Start it with: ollama serve`
+  message instead of a raw connection error.
+- **`OpenAICompatibleProvider`**: generic OpenAI-protocol client. Same
+  wire path for **DeepSeek / Groq / Mistral / Together AI / Fireworks /
+  LM Studio / vLLM** — any vendor that speaks `chat.completions`. Cost
+  is user-supplied via `cost_per_1m_input_usd` / `cost_per_1m_output_usd`
+  in config because we don't track third-party prices (they go stale).
+- **`compaction::factory::make_provider` + `make_completer`**: build a
+  `Box<dyn CompactionProvider>` / `Box<dyn LlmCompleter>` from a
+  `RoutingConfig`. Used by both `drift capture` and `drift handoff`.
+- **`LlmCompleter` trait**: parallel to `CompactionProvider`, lets
+  handoff dispatch through any provider via dynamic dispatch.
+- **Config schema gains `[handoff.providers.<name>]` and
+  `[compaction.providers.<name>]`**. `provider = "anthropic"` remains
+  the default; v0.2 configs upgrade losslessly.
+- **`drift init` writes a richer config template** — every supported
+  provider has a commented-out template the user uncomments to switch.
+- **CRLF SSE delimiter support** in the shared streaming helper
+  (`compaction::streaming::find_event_boundary`). Caught a Gemini
+  parsing bug where `\r\n\r\n` event boundaries were being missed.
+- **Real-API smoke harness** at `crates/drift-core/tests/v030_real_smoke.rs`,
+  covering Anthropic + OpenAI + Gemini + DeepSeek + Ollama. Self-skips
+  when env / daemon is missing. Results captured in `docs/V030-V040-SMOKE.md`.
+
+### Added — Multi-agent connector (v0.4 part)
+
+- **`CursorConnector`**: parses Cursor's per-workspace SQLite store
+  (`state.vscdb`, `cursorDiskKV` table) for `composerData:*` /
+  `cursorPanelView:*` rows. Maps composer messages → turns and
+  `edits[]` → `CodeEvent`s with operation inferred from before/after
+  presence. **Read-only**: never writes back to Cursor's DB.
+- **`AiderConnector` full impl** (was a 27-line stub in v0.1). Parses
+  `.aider.chat.history.md` markdown: `> `-prefixed lines = user, the
+  rest = assistant. Extracts ` ```diff ` fenced blocks as tool calls
+  keyed by file path.
+- **`AgentSlug::Cursor`** as a first-class slug; Cursor + Aider both
+  default-on in the connector feature set.
+- **`TargetAgent::Cursor` + `TargetAgent::Aider`**: `drift handoff
+  --to cursor|aider` now produces footers tailored to those agents'
+  paste workflows.
+- **9 unit tests for Cursor + 11 for Aider** with synthetic fixtures.
+  No real user data is committed.
+- **CONTRIBUTING.md walkthrough rewritten** to use both connectors as
+  worked examples (markdown-style for Aider, SQLite-style for Cursor).
+
+### Changed
+
+- `compaction.rs` is now a Rust 2018 sibling-submodule parent — the
+  v0.2 Anthropic + Mock implementations stay exactly as shipped, with
+  the new providers in `compaction/{openai,gemini,ollama,openai_compat,
+  factory,streaming}.rs`. Public API is preserved; v0.2 callers keep
+  working.
+- `Role` enum gains `Copy` (additive — no break).
+- `cursor: false` and `aider: false` defaults in `[connectors]` are
+  *opt-in* — set them to `true` to enable, matching the v0.1 stance for
+  agents that may not be installed on every host.
+
+### Stability guarantees carried from v0.1 / v0.2
+
+- `events.db` schema is unchanged. Upgrading from v0.2.x is a binary
+  swap; no migration.
+- MCP tool list (`drift_blame` / `drift_trace` / `drift_rejected` /
+  `drift_log` / `drift_show_event`) is unchanged.
+- `SessionConnector` trait signature is unchanged.
+- `CompactionProvider` trait is unchanged. New providers extend the
+  set; the trait itself isn't widened.
+- `CompactionError` enum is unchanged.
+- v0.1.2 first-run privacy notice still fires unchanged.
+
+### Known limitations (v0.4)
+
+- **Cursor schema is reverse-engineered** and undocumented. The
+  connector is `[BEST-EFFORT]` and may break with future Cursor
+  versions — it emits warnings rather than failing the whole capture
+  run when a row doesn't parse.
+- **Aider has no tool_call structure**, so `rejected = false` is the
+  default for every event; the SHA-256 ladder still detects when
+  reality diverges.
+- **`OpenAICompatibleProvider` doesn't ship a price table**. Users
+  supply `cost_per_1m_*_usd` per provider entry; if absent, `drift cost`
+  shows that provider as unpriced.
+- **Cursor agent-mode composer state** (multi-step tool-call replay)
+  is partial — chat messages are extracted, the inner state machine is
+  not. Full agent-mode support is v0.5.
+- **Gemini is wired against AI Studio**, not Vertex AI. Vertex (and
+  Bedrock + Azure OpenAI) is the v0.5 enterprise wave.
+
+### Test count
+
+v0.2.0: 67 tests · v0.4.0: **122 tests** (+55) — 35 in compaction
+(provider parsers + factory + streaming), 9 in cursor connector, 11 in
+aider connector. All four cloud providers verified with real API smoke.
+
 ## [0.2.0] — 2026-04-25
 
 The "you don't get locked into one LLM vendor" release. Adds
