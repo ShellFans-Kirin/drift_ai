@@ -13,16 +13,16 @@ CARGO_HOME=/tmp/drift-clean-cargo-v040 cargo install drift-ai --locked
 # expect: drift 0.4.0
 ```
 
-## T-50 min — brew verification (Mac mini via Tailscale)
+## T-50 min — brew verification on macOS
+
+Run on any macOS host (Apple Silicon or Intel) you control:
 
 ```bash
-ssh kirin@rueimac-mini "bash -lc '
-  brew untap ShellFans-Kirin/drift 2>/dev/null || true
-  brew tap ShellFans-Kirin/drift
-  brew install drift
-  drift --version
-  brew uninstall drift
-'"
+brew untap ShellFans-Kirin/drift 2>/dev/null || true
+brew tap ShellFans-Kirin/drift
+brew install drift
+drift --version
+brew uninstall drift
 # expect: drift 0.4.0
 ```
 

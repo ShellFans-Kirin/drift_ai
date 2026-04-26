@@ -1,9 +1,8 @@
 # Mac Verification Report — drift v0.1.2
 
 **日期**：2026-04-25
-**驗證方式**：Tailscale SSH 到 `rueimac-mini` (Apple M4 / macOS 26.3.1)，
-作者人在 Linux 但透過 tailnet `ssh kirin@rueimac-mini` 在 Mac 上實跑全套
-Homebrew install / smoke / cleanup。
+**驗證方式**：在一台 Apple M4 / macOS 26.3.1 的 Mac 上實跑全套 Homebrew
+install / smoke / cleanup(作者人在 Linux,透過 SSH 連到自己的 Mac 跑)。
 **Mac 架構**：**arm64** (Apple Silicon)
 **Homebrew 版本**：**5.1.7** at `/opt/homebrew/bin/brew`
 

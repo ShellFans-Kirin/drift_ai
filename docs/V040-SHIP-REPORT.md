@@ -100,23 +100,20 @@ Cost numbers are surfaced live via `drift cost` against the local
 
 ## Mac brew install verification
 
-⚠️ **Pending** — needs Tailscale SSH to `rueimac-mini` from the user's
-host. Recommended verification command before launch:
+⚠️ **Pending** — to be run on a real macOS host (Apple Silicon or Intel)
+before launch:
 
 ```bash
-ssh kirin@rueimac-mini "bash -lc '
-  brew untap ShellFans-Kirin/drift 2>/dev/null || true
-  brew tap ShellFans-Kirin/drift
-  brew install drift
-  drift --version
-  brew uninstall drift
-'"
+brew untap ShellFans-Kirin/drift 2>/dev/null || true
+brew tap ShellFans-Kirin/drift
+brew install drift
+drift --version
+brew uninstall drift
 # expect: drift 0.4.0
 ```
 
-The agent doesn't have Tailscale auth on this host, so this step is
-deferred to the user's launch checklist (`docs/launch/v040-pre-launch-checklist.md`,
-T-50 min).
+The agent runs on a Linux host, so this step is deferred to the user's
+launch checklist (`docs/launch/v040-pre-launch-checklist.md`, T-50 min).
 
 ## Demo recordings
 

@@ -14,16 +14,13 @@ rm -rf "$TMPCARGO" && CARGO_HOME="$TMPCARGO" cargo install drift-ai --locked
 "$TMPCARGO/bin/drift" --version
 # expect: drift 0.2.0
 
-# 2. brew install on the Mac (Tailscale SSH or local)
-ssh kirin@rueimac-mini bash -lc '
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-  brew untap ShellFans-Kirin/drift 2>/dev/null || true
-  brew tap ShellFans-Kirin/drift
-  brew install drift
-  drift --version
-  brew uninstall drift
-  brew untap ShellFans-Kirin/drift
-'
+# 2. brew install on a macOS host you control (local terminal or SSH)
+brew untap ShellFans-Kirin/drift 2>/dev/null || true
+brew tap ShellFans-Kirin/drift
+brew install drift
+drift --version
+brew uninstall drift
+brew untap ShellFans-Kirin/drift
 # expect: drift 0.2.0 in the middle, clean uninstall at the end
 
 # 3. cargo install does NOT pull in any vulnerability flagged crate

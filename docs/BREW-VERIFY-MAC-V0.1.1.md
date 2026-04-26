@@ -9,12 +9,11 @@
 
 | 項目 | 值 |
 |---|---|
-| 機器 | `Ruei的Mac mini`（tailnet `rueimac-mini`, `100.125.235.69`） |
-| 路由 | Linux → Mac via Tailscale SSH（pubkey auth）|
+| 機器 | 作者私人 Mac mini |
+| 路由 | Linux → Mac via SSH(pubkey auth) |
 | macOS | **26.3.1** (build 25D2128, darwin xnu-12377) |
 | CPU | **Apple M4** (arm64) |
 | Homebrew | 5.0.16 |
-| Mac user | `kirin` |
 
 ---
 
@@ -131,4 +130,4 @@ Show HN 全部前置條件都通過，沒有剩下的 blocker。
 
 1. **Mac 本機有 159 個 claude sessions**（Linux host 只有 10）。drift 的 `~/.claude/projects/` scanner 在 macOS 上運作正常，處理中文路徑（例 `/Volumes/ORICO/personas_info/tw/2026/04/24/persona_003_張雅晴.md`）無編碼問題。
 2. **`brew info` 顯示 "Built from source"**：這是 Homebrew 對「沒有官方 bottle 的 formula」的慣用說法；實際上 Formula 是 `bin.install "drift"` 直接安裝 pre-built binary。不影響安裝速度或可用性（~18 s 就是下載 tarball + 解壓 + 符號連結的時間）。
-3. **Tailscale SSH 延遲 9 ms**（直連 UDP `114.44.200.168:41641`，非 DERP relay）— 跨台灣雙機 tailnet 可用度好。
+3. **SSH 延遲 ~9 ms**(雙機在同一 LAN / VPN 內,直連而非 relay)。

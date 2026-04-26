@@ -292,10 +292,10 @@ $ drift --version
 drift 0.2.0
 ```
 
-### 5.6 Mac brew install 重驗（Tailscale SSH）
+### 5.6 Mac brew install 重驗
 
-- 機器：rueimac-mini（Apple M4 / macOS 26.3.1 / Homebrew 5.1.7）
-- 連線：`ssh kirin@rueimac-mini` 走 Tailscale tunnel
+- 機器：Apple M4 / macOS 26.3.1 / Homebrew 5.1.7
+- 連線方式：SSH 到自己的 Mac
 - 驗證 11 步全綠：tap → install (7.6 s) → `drift --version = 0.2.0` → handoff --help 顯示完整 flag → mcp serverInfo.version=0.2.0 → brew test drift → uninstall → untap → 殘留掃描乾淨
 
 ---
