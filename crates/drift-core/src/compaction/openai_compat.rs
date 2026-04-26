@@ -89,13 +89,17 @@ impl CompactionProvider for OpenAICompatibleProvider {
 }
 
 impl OpenAICompatibleProvider {
-    /// Generic completion. Delegates to the inner OpenAI provider.
+    /// Generic completion. Delegates to the inner OpenAI provider, then
+    /// re-stamps the cost using the user-supplied per-1M-token pricing
+    /// (the inner client only knows OpenAI's price table).
     pub async fn complete_async(
         &self,
         system: &str,
         user: &str,
     ) -> CompactionRes<crate::compaction::LlmCompletion> {
-        self.inner.complete_async(system, user).await
+        let mut completion = self.inner.complete_async(system, user).await?;
+        completion.cost_usd = self.cost_for(completion.input_tokens, completion.output_tokens);
+        Ok(completion)
     }
 }
 

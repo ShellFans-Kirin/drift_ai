@@ -181,6 +181,7 @@ pub fn load(repo_root: &Path) -> Result<DriftConfig> {
         cfg.attribution = proj.attribution;
         cfg.connectors = proj.connectors;
         cfg.compaction = proj.compaction;
+        cfg.handoff = proj.handoff;
         cfg.sync = proj.sync;
     }
     Ok(cfg)
