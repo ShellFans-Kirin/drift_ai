@@ -289,3 +289,55 @@ model    = "claude-opus-4-7"    # narrative quality matters here; ~30x cheaper H
 [sync]
 # notes_remote = "origin"
 "##;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    /// v0.4.2 regression: project config's `[handoff]` block was being
+    /// silently ignored by `load()` — the overlay copied attribution,
+    /// connectors, compaction, sync but skipped handoff. Result was that
+    /// any `provider = "deepseek"` (or anything other than the default)
+    /// in `.prompts/config.toml` had no effect; handoff always called the
+    /// default Anthropic Opus model. Fixed in commit fcc3454.
+    #[test]
+    fn handoff_config_project_overlay_is_applied() {
+        let dir = tempdir().unwrap();
+        let prompts = dir.path().join(".prompts");
+        std::fs::create_dir_all(&prompts).unwrap();
+        std::fs::write(
+            prompts.join("config.toml"),
+            r#"
+[handoff]
+provider = "deepseek"
+model = "deepseek-chat"
+
+[handoff.providers.deepseek]
+type = "openai_compatible"
+base_url = "https://api.deepseek.com"
+model = "deepseek-chat"
+api_key_env = "DEEPSEEK_API_KEY"
+cost_per_1m_input_usd = 0.27
+cost_per_1m_output_usd = 1.10
+"#,
+        )
+        .unwrap();
+
+        let cfg = load(dir.path()).expect("load");
+        assert_eq!(
+            cfg.handoff.provider.as_deref(),
+            Some("deepseek"),
+            "project [handoff].provider must overlay over the default"
+        );
+        assert_eq!(cfg.handoff.model, "deepseek-chat");
+        assert!(
+            cfg.handoff.providers.contains_key("deepseek"),
+            "project [handoff.providers.<name>] map must propagate"
+        );
+        let dp = &cfg.handoff.providers["deepseek"];
+        assert_eq!(dp.r#type.as_deref(), Some("openai_compatible"));
+        assert_eq!(dp.cost_per_1m_input_usd, Some(0.27));
+        assert_eq!(dp.cost_per_1m_output_usd, Some(1.10));
+    }
+}

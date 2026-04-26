@@ -303,4 +303,50 @@ mod tests {
         let c = p.cost_for(1_000_000, 1_000_000);
         assert!((c - 3.0).abs() < 1e-6);
     }
+
+    /// v0.4.2 regression: `complete_async` (used by `drift handoff`) used
+    /// to delegate to the inner OpenAIProvider but never re-stamped the
+    /// returned cost with the user-supplied per-1M-token rates. Result
+    /// was every DeepSeek / Groq / Mistral / vLLM handoff brief reported
+    /// `cost=$0.0000` because the inner client looked up the model in
+    /// OpenAI's table and got nothing. Fixed in commit fcc3454.
+    #[tokio::test]
+    async fn handoff_complete_re_stamps_user_pricing() {
+        let mut server = mockito::Server::new_async().await;
+        let _m = server
+            .mock("POST", "/v1/chat/completions")
+            .with_status(200)
+            .with_header("content-type", "text/event-stream")
+            .with_body(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"## Summary\\n\\nfine\"}}]}\n\n\
+                 data: {\"choices\":[{\"finish_reason\":\"stop\",\"delta\":{}}],\"usage\":{\"prompt_tokens\":1000,\"completion_tokens\":200}}\n\n\
+                 data: [DONE]\n\n",
+            )
+            .create_async()
+            .await;
+
+        let provider = OpenAICompatibleProvider::new(
+            "deepseek",
+            server.url(),
+            Some("sk-test".into()),
+            "deepseek-chat",
+            CustomPricing {
+                input_per_mtok: Some(0.27),
+                output_per_mtok: Some(1.10),
+            },
+        );
+
+        let completion = provider
+            .complete_async("system prompt", "user prompt")
+            .await
+            .expect("complete_async should succeed");
+        // Expected: 1000/1M * 0.27 + 200/1M * 1.10 = 0.00027 + 0.00022 = 0.00049
+        assert!(
+            (completion.cost_usd - 0.00049).abs() < 1e-7,
+            "handoff path must use user-supplied pricing, got {}",
+            completion.cost_usd
+        );
+        assert_eq!(completion.input_tokens, 1000);
+        assert_eq!(completion.output_tokens, 200);
+    }
 }
