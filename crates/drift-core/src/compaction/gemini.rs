@@ -100,6 +100,14 @@ impl GeminiProvider {
             ],
             "generationConfig": {
                 "maxOutputTokens": self.max_tokens,
+                // Gemini 2.5-flash/pro spends part of its output budget on
+                // hidden "thoughts" tokens by default; on tight budgets that
+                // can starve the actual text. Setting `thinkingBudget = 0`
+                // disables this for narrative-summarization use cases like
+                // ours where we want all tokens to land in the visible text.
+                "thinkingConfig": {
+                    "thinkingBudget": 0
+                }
             }
         });
 
@@ -242,6 +250,19 @@ impl CompactionProvider for GeminiProvider {
             .build()
             .map_err(|e| CompactionError::Other(anyhow::anyhow!(e)))?;
         rt.block_on(self.compact_async(session))
+    }
+}
+
+impl crate::compaction::LlmCompleter for GeminiProvider {
+    fn name(&self) -> &'static str {
+        "gemini"
+    }
+    fn complete(&self, system: &str, user: &str) -> CompactionRes<LlmCompletion> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| CompactionError::Other(anyhow::anyhow!(e)))?;
+        rt.block_on(self.complete_async(system, user))
     }
 }
 

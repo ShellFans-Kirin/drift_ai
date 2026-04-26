@@ -6,7 +6,8 @@ use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Utc};
 use drift_core::config;
 use drift_core::{
-    build_handoff, render_brief, AnthropicProvider, HandoffOptions, HandoffScope, TargetAgent,
+    build_handoff, make_completer, render_brief, HandoffOptions, HandoffScope, LlmCompleter,
+    TargetAgent,
 };
 use std::io::{IsTerminal, Write as _};
 use std::path::{Path, PathBuf};
@@ -39,16 +40,25 @@ pub fn run(
     };
 
     let cfg = config::load(repo).unwrap_or_default();
-    // Suppress the AnthropicProvider's per-token SSE progress spinner —
-    // handoff has its own ⚡ progress lines, the streamed text would
-    // overlap and look noisy when tee'd.
-    let provider =
-        AnthropicProvider::try_new(Some(cfg.handoff.model.clone())).map(|p| p.with_progress(false));
-    if provider.is_none() {
+    // Build an LlmCompleter from config — anthropic by default, with optional
+    // [handoff.providers.<name>] entries for openai / gemini / ollama / openai_compatible.
+    let routing = cfg.handoff.to_routing();
+    let (completer, mock_fallback) = match make_completer(&routing) {
+        Ok(pair) => pair,
+        Err(e) => {
+            return Err(anyhow!("handoff: failed to build provider: {}", e));
+        }
+    };
+    if mock_fallback {
         eprintln!(
-            "drift handoff · ANTHROPIC_API_KEY not set — falling back to deterministic mock summary"
+            "drift handoff · provider `{}` unavailable (env var unset?) — falling back to deterministic mock summary",
+            routing.provider.as_deref().unwrap_or("anthropic")
         );
     }
+    let completer_name = completer
+        .as_ref()
+        .map(|p| <dyn LlmCompleter>::name(p.as_ref()))
+        .unwrap_or("mock");
 
     let opts = HandoffOptions {
         repo: repo.to_path_buf(),
@@ -60,18 +70,9 @@ pub fn run(
     let store = open_store(repo)?;
 
     progress(true, "⚡ extracting file snippets and rejected approaches");
-    progress(
-        true,
-        &format!(
-            "⚡ compacting brief via {}",
-            provider
-                .as_ref()
-                .map(|p| p.model.as_str())
-                .unwrap_or("mock"),
-        ),
-    );
+    progress(true, &format!("⚡ compacting brief via {}", completer_name));
 
-    let brief = build_handoff(&store, provider.as_ref(), &opts).context("build_handoff")?;
+    let brief = build_handoff(&store, completer.as_deref(), &opts).context("build_handoff")?;
 
     let body = render_brief(&brief, target);
 

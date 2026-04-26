@@ -222,6 +222,19 @@ impl CompactionProvider for OllamaProvider {
     }
 }
 
+impl crate::compaction::LlmCompleter for OllamaProvider {
+    fn name(&self) -> &'static str {
+        "ollama"
+    }
+    fn complete(&self, system: &str, user: &str) -> CompactionRes<LlmCompletion> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| CompactionError::Other(anyhow::anyhow!(e)))?;
+        rt.block_on(self.complete_async(system, user))
+    }
+}
+
 const TEMPLATE: &str = include_str!("../../templates/compaction.md");
 
 fn compaction_system_prompt() -> &'static str {

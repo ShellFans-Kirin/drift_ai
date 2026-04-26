@@ -17,11 +17,12 @@ pub mod model;
 pub mod shell_lexer;
 pub mod store;
 
-pub use compaction::factory::{make_provider, ProviderConfig, RoutingConfig};
+pub use compaction::factory::{make_completer, make_provider, ProviderConfig, RoutingConfig};
 pub use compaction::gemini::GeminiProvider;
 pub use compaction::ollama::OllamaProvider;
 pub use compaction::openai::OpenAIProvider;
 pub use compaction::openai_compat::{CustomPricing, OpenAICompatibleProvider};
+pub use compaction::LlmCompleter;
 pub use compaction::{
     compute_cost_usd, pricing_for, AnthropicProvider, CompactedSummary, CompactionError,
     CompactionProvider, CompactionRes, CompactionResult, CompactionUsage, LlmCompletion,

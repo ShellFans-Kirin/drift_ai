@@ -12,7 +12,7 @@
 use crate::compaction::openai_compat::{CustomPricing, OpenAICompatibleProvider};
 use crate::compaction::{
     gemini::GeminiProvider, ollama::OllamaProvider, openai::OpenAIProvider, AnthropicProvider,
-    CompactionError, CompactionProvider, MockProvider,
+    CompactionError, CompactionProvider, LlmCompleter, MockProvider,
 };
 use anyhow::{anyhow, Context};
 use serde::{Deserialize, Serialize};
@@ -147,6 +147,56 @@ fn build_native(
         }
         _ => return Ok(None),
     }))
+}
+
+/// Build an [`LlmCompleter`] for the second-pass call (used by `drift handoff`).
+/// Returns `(box, mock_fallback_taken)` mirroring [`make_provider`]. When
+/// `mock_fallback_taken` is true the caller should refuse to run the second
+/// pass; handoff degrades to its deterministic fallback in that case.
+pub fn make_completer(
+    cfg: &RoutingConfig,
+) -> Result<(Option<Box<dyn LlmCompleter>>, bool), CompactionError> {
+    let name = cfg
+        .provider
+        .as_deref()
+        .unwrap_or("anthropic")
+        .to_lowercase();
+    let model_override = cfg
+        .providers
+        .get(&name)
+        .and_then(|pc| pc.model.clone())
+        .or_else(|| cfg.model.clone());
+
+    Ok(match name.as_str() {
+        "mock" => (None, true),
+        "anthropic" => match AnthropicProvider::try_new(model_override) {
+            Some(p) => (Some(Box::new(p)), false),
+            None => (None, true),
+        },
+        "openai" => match OpenAIProvider::try_new(model_override) {
+            Some(p) => (Some(Box::new(p)), false),
+            None => (None, true),
+        },
+        "gemini" => match GeminiProvider::try_new(model_override) {
+            Some(p) => (Some(Box::new(p)), false),
+            None => (None, true),
+        },
+        "ollama" => {
+            let base = cfg
+                .providers
+                .get("ollama")
+                .and_then(|pc| pc.base_url.clone())
+                .unwrap_or_else(|| "http://localhost:11434".into());
+            let model = model_override.unwrap_or_else(|| "llama3.3:70b".into());
+            (Some(Box::new(OllamaProvider::new(base, model))), false)
+        }
+        other => match cfg.providers.get(other) {
+            Some(pc) if pc.r#type.as_deref() == Some("openai_compatible") => {
+                (Some(Box::new(build_openai_compatible(other, pc)?)), false)
+            }
+            _ => (None, true),
+        },
+    })
 }
 
 fn build_openai_compatible(

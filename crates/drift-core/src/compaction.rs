@@ -107,6 +107,15 @@ pub trait CompactionProvider {
     fn compact(&self, session: &NormalizedSession) -> CompactionRes<CompactionResult>;
 }
 
+/// Generic system+user → text LLM completion. Implemented by every provider
+/// that supports `drift handoff`'s second-pass call. Distinct from
+/// [`CompactionProvider`] because it doesn't carry the per-session prompt
+/// shape — handoff aggregates across sessions.
+pub trait LlmCompleter: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn complete(&self, system: &str, user: &str) -> CompactionRes<LlmCompletion>;
+}
+
 // ---------------------------------------------------------------------------
 // MockProvider — deterministic fallback
 // ---------------------------------------------------------------------------
@@ -784,6 +793,15 @@ impl CompactionProvider for AnthropicProvider {
             .build()
             .map_err(|e| CompactionError::Other(anyhow::anyhow!(e)))?;
         rt.block_on(self.compact_async(session))
+    }
+}
+
+impl LlmCompleter for AnthropicProvider {
+    fn name(&self) -> &'static str {
+        "anthropic"
+    }
+    fn complete(&self, system: &str, user: &str) -> CompactionRes<LlmCompletion> {
+        AnthropicProvider::complete(self, system, user)
     }
 }
 

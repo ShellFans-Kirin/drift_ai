@@ -265,6 +265,19 @@ impl CompactionProvider for OpenAIProvider {
     }
 }
 
+impl crate::compaction::LlmCompleter for OpenAIProvider {
+    fn name(&self) -> &'static str {
+        "openai"
+    }
+    fn complete(&self, system: &str, user: &str) -> CompactionRes<LlmCompletion> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| CompactionError::Other(anyhow::anyhow!(e)))?;
+        rt.block_on(self.complete_async(system, user))
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Pricing — built-in, conservative. Cross-check OpenAI's pricing page.
 // ---------------------------------------------------------------------------

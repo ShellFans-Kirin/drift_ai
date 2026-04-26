@@ -3,9 +3,8 @@ use anyhow::{Context, Result};
 use chrono::DateTime;
 use drift_connectors::default_connectors;
 use drift_core::attribution::commit_drafts;
-use drift_core::compaction::{
-    summary_to_markdown, AnthropicProvider, CompactionProvider, MockProvider,
-};
+use drift_core::compaction::factory::make_provider;
+use drift_core::compaction::{summary_to_markdown, CompactionProvider};
 use drift_core::config;
 use std::io::{BufRead as _, Write as _};
 use std::path::{Path, PathBuf};
@@ -126,17 +125,22 @@ pub fn run(
     Ok(())
 }
 
-/// Resolve the compaction provider at capture-time. If the project / global
-/// config asks for anthropic and a key is present, use it; otherwise fall
-/// back to [`MockProvider`] so CI / dry-runs still work.
+/// Resolve the compaction provider at capture-time using the v0.3 routing
+/// factory. Supports `anthropic` (default), `openai`, `gemini`, `ollama`,
+/// `mock`, and any user-named entry under `[compaction.providers.<name>]`
+/// with `type = "openai_compatible"`.
+///
+/// Falls back to MockProvider when the chosen provider's API key env var is
+/// unset, so CI / dry-runs still work.
 fn select_provider(cfg: &drift_core::config::DriftConfig) -> Box<dyn CompactionProvider> {
-    let wants_anthropic = matches!(cfg.compaction.provider.as_deref(), Some("anthropic") | None);
-    if wants_anthropic {
-        if let Some(p) = AnthropicProvider::try_new(Some(cfg.compaction.model.clone())) {
-            return Box::new(p);
+    let routing = cfg.compaction.to_routing();
+    match make_provider(&routing) {
+        Ok((p, _mock_fallback)) => p,
+        Err(e) => {
+            eprintln!("drift capture · provider config error: {} — using mock", e);
+            Box::new(drift_core::compaction::MockProvider)
         }
     }
-    Box::new(MockProvider)
 }
 
 // ---------------------------------------------------------------------------

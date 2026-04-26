@@ -19,7 +19,7 @@
 //! `events.db` schema is unchanged; this module is read-only against the
 //! v0.1 store.
 
-use crate::compaction::{AnthropicProvider, CompactionError, CompactionRes, LlmCompletion};
+use crate::compaction::{CompactionError, CompactionRes, LlmCompleter, LlmCompletion};
 use crate::model::AgentSlug;
 use crate::store::{EventStore, SessionRow};
 use chrono::{DateTime, Utc};
@@ -160,7 +160,7 @@ pub struct Decision {
 
 pub fn build_handoff(
     store: &EventStore,
-    provider: Option<&AnthropicProvider>,
+    provider: Option<&dyn LlmCompleter>,
     opts: &HandoffOptions,
 ) -> CompactionRes<HandoffBrief> {
     let sessions = collect_sessions(store, &opts.scope, &opts.repo)?;
@@ -514,7 +514,7 @@ struct LlmOutput {
 }
 
 fn llm_second_pass(
-    provider: &AnthropicProvider,
+    provider: &dyn LlmCompleter,
     sessions: &[SessionSlim],
     snippets: &[FileSnippet],
     rejected: &[RejectedApproach],

@@ -75,9 +75,32 @@ where
     Ok(())
 }
 
-/// Stream a `bytes_stream` response as `\n\n`-delimited SSE blocks. Calls
-/// `on_data(payload)` for each `data:` payload, and `on_data(None)` for each
-/// `[DONE]` sentinel. Caller decides when to stop early via `Err`.
+/// Find an event-boundary terminator: `\n\n` or `\r\n\r\n`. Returns
+/// `(index_of_first_newline_byte, terminator_length)`.
+fn find_event_boundary(buf: &[u8]) -> Option<(usize, usize)> {
+    // Look for \r\n\r\n first (CRLF-style, what some servers emit) — the longer
+    // terminator must be checked first so we don't false-match \n\n inside CRLF.
+    if buf.len() >= 4 {
+        for i in 0..=buf.len() - 4 {
+            if &buf[i..i + 4] == b"\r\n\r\n" {
+                return Some((i, 4));
+            }
+        }
+    }
+    if buf.len() >= 2 {
+        for i in 0..=buf.len() - 2 {
+            if &buf[i..i + 2] == b"\n\n" {
+                return Some((i, 2));
+            }
+        }
+    }
+    None
+}
+
+/// Stream a `bytes_stream` response as event-delimited SSE blocks (delimited
+/// by either `\n\n` or `\r\n\r\n`). Calls `on_data(payload)` for each `data:`
+/// payload, and `on_data(None)` for each `[DONE]` sentinel. Caller decides
+/// when to stop early via `Err`.
 pub async fn for_each_sse_data<F>(
     resp: reqwest::Response,
     mut on_data: F,
@@ -91,8 +114,8 @@ where
     while let Some(chunk) = stream.next().await {
         let bytes = chunk.map_err(CompactionError::TransientNetwork)?;
         buf.extend_from_slice(&bytes);
-        while let Some(idx) = find_double_newline(&buf) {
-            let block: Vec<u8> = buf.drain(..idx + 2).collect();
+        while let Some((idx, term_len)) = find_event_boundary(&buf) {
+            let block: Vec<u8> = buf.drain(..idx + term_len).collect();
             let s = String::from_utf8_lossy(&block);
             for payload in extract_sse_data(&s) {
                 on_data(payload.as_deref())?;

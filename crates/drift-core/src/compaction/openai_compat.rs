@@ -88,6 +88,34 @@ impl CompactionProvider for OpenAICompatibleProvider {
     }
 }
 
+impl OpenAICompatibleProvider {
+    /// Generic completion. Delegates to the inner OpenAI provider.
+    pub async fn complete_async(
+        &self,
+        system: &str,
+        user: &str,
+    ) -> CompactionRes<crate::compaction::LlmCompletion> {
+        self.inner.complete_async(system, user).await
+    }
+}
+
+impl crate::compaction::LlmCompleter for OpenAICompatibleProvider {
+    fn name(&self) -> &'static str {
+        "openai-compatible"
+    }
+    fn complete(
+        &self,
+        system: &str,
+        user: &str,
+    ) -> CompactionRes<crate::compaction::LlmCompletion> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| CompactionError::Other(anyhow::anyhow!(e)))?;
+        rt.block_on(self.complete_async(system, user))
+    }
+}
+
 // Helper: surface the configured friendly name (e.g. "deepseek") for callers
 // that need it (factory diagnostics, cost reports).
 impl OpenAICompatibleProvider {
