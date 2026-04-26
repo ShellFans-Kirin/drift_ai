@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "Session connectors for Drift AI: Claude Code, Codex, and Aider (stub)."
+description = "Session connectors for Drift AI: Claude Code, Codex, Cursor, and Aider."
 readme = "README.md"
 
 [dependencies]
@@ -18,11 +18,14 @@ serde_json.workspace = true
 chrono.workspace = true
 tracing.workspace = true
 dirs.workspace = true
+rusqlite = { workspace = true, optional = true }
+sha2.workspace = true
 
 [features]
-default = ["claude-code", "codex"]
+default = ["claude-code", "codex", "cursor", "aider"]
 claude-code = []
 codex = []
+cursor = ["dep:rusqlite"]
 aider = []
 
 [dev-dependencies]

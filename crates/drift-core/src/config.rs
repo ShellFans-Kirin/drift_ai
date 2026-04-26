@@ -53,6 +53,8 @@ pub struct ConnectorsConfig {
     #[serde(default = "default_true")]
     pub codex: bool,
     #[serde(default)]
+    pub cursor: bool,
+    #[serde(default)]
     pub aider: bool,
 }
 impl Default for ConnectorsConfig {
@@ -60,6 +62,7 @@ impl Default for ConnectorsConfig {
         Self {
             claude_code: true,
             codex: true,
+            cursor: false,
             aider: false,
         }
     }

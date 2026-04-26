@@ -18,6 +18,8 @@ use std::path::PathBuf;
 pub mod aider;
 pub mod claude_code;
 pub mod codex;
+#[cfg(feature = "cursor")]
+pub mod cursor;
 
 /// Reference to a discovered session file.
 #[derive(Debug, Clone)]
@@ -42,6 +44,8 @@ pub fn default_connectors() -> Vec<Box<dyn SessionConnector>> {
     ));
     #[cfg(feature = "codex")]
     v.push(Box::new(codex::CodexConnector::with_default_root()));
+    #[cfg(feature = "cursor")]
+    v.push(Box::new(cursor::CursorConnector::with_default_root()));
     #[cfg(feature = "aider")]
     v.push(Box::new(aider::AiderConnector));
     v

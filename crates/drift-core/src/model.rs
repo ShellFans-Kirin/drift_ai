@@ -16,6 +16,7 @@ use std::path::PathBuf;
 pub enum AgentSlug {
     ClaudeCode,
     Codex,
+    Cursor,
     Aider,
     Human,
     Unknown,
@@ -26,6 +27,7 @@ impl AgentSlug {
         match self {
             AgentSlug::ClaudeCode => "claude-code",
             AgentSlug::Codex => "codex",
+            AgentSlug::Cursor => "cursor",
             AgentSlug::Aider => "aider",
             AgentSlug::Human => "human",
             AgentSlug::Unknown => "unknown",
@@ -36,6 +38,7 @@ impl AgentSlug {
         match s {
             "claude-code" => AgentSlug::ClaudeCode,
             "codex" => AgentSlug::Codex,
+            "cursor" => AgentSlug::Cursor,
             "aider" => AgentSlug::Aider,
             "human" => AgentSlug::Human,
             _ => AgentSlug::Unknown,

@@ -49,6 +49,8 @@ pub enum HandoffScope {
 pub enum TargetAgent {
     ClaudeCode,
     Codex,
+    Cursor,
+    Aider,
     Generic,
 }
 
@@ -57,6 +59,8 @@ impl TargetAgent {
         match s.to_lowercase().as_str() {
             "claude-code" | "claude_code" | "claude" => Some(Self::ClaudeCode),
             "codex" => Some(Self::Codex),
+            "cursor" => Some(Self::Cursor),
+            "aider" => Some(Self::Aider),
             "generic" | "any" => Some(Self::Generic),
             _ => None,
         }
@@ -65,6 +69,8 @@ impl TargetAgent {
         match self {
             Self::ClaudeCode => "claude-code",
             Self::Codex => "codex",
+            Self::Cursor => "cursor",
+            Self::Aider => "aider",
             Self::Generic => "generic",
         }
     }
@@ -882,6 +888,30 @@ pub fn render_brief(brief: &HandoffBrief, target: TargetAgent) -> String {
                 s.push_str(&format!(" on branch `{}`", b));
             }
             s.push_str(". Decisions in \"Key decisions made\" are settled — do not revisit.\n");
+        }
+        TargetAgent::Cursor => {
+            s.push_str(
+                "\n## How to continue (paste into Cursor composer)\n\n\
+                 > Open the Cursor composer (Cmd/Ctrl+I), paste this brief, \
+                 and apply changes from \"Next steps\" item 1. \
+                 Decisions in \"Key decisions made\" are settled — don't relitigate.",
+            );
+            if let Some(b) = &brief.branch {
+                s.push_str(&format!(" Branch: `{}`.", b));
+            }
+            s.push('\n');
+        }
+        TargetAgent::Aider => {
+            s.push_str(
+                "\n## How to continue (paste at the aider prompt)\n\n\
+                 > Resume the task documented above. Aider will read referenced files \
+                 from the working tree; start with \"Next steps\" item 1. \
+                 Decisions are settled — apply, don't debate.",
+            );
+            if let Some(b) = &brief.branch {
+                s.push_str(&format!(" Branch: `{}`.", b));
+            }
+            s.push('\n');
         }
         TargetAgent::Generic => {
             // Pure brief, no per-agent footer.

@@ -32,7 +32,7 @@ pub fn run(
     let target = match to {
         Some(s) => TargetAgent::parse(s).ok_or_else(|| {
             anyhow!(
-                "--to expects one of claude-code | codex | generic, got `{}`",
+                "--to expects one of claude-code | codex | cursor | aider | generic, got `{}`",
                 s
             )
         })?,
@@ -193,6 +193,17 @@ fn print_next_steps(target: TargetAgent, out_path: &Path) {
             eprintln!("  # then paste:");
             eprintln!("  \"Resume the task documented in this brief. Start at 'Next steps' #1.\"");
             eprintln!("  \"$(cat {})\"", path_str);
+        }
+        TargetAgent::Cursor => {
+            eprintln!();
+            eprintln!("next: open Cursor, hit Cmd/Ctrl+I to open the composer,");
+            eprintln!("      paste the contents of {}, hit Enter.", path_str);
+        }
+        TargetAgent::Aider => {
+            eprintln!();
+            eprintln!("next: at the aider prompt, paste:");
+            eprintln!("  \"$(cat {})\"", path_str);
+            eprintln!("aider will read referenced files from the working tree.");
         }
         TargetAgent::Generic => {
             eprintln!();
