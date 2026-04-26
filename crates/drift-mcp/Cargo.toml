@@ -11,7 +11,7 @@ description = "Read-only stdio MCP server for Drift AI. Exposes blame / trace / 
 readme = "README.md"
 
 [dependencies]
-drift-core = { path = "../drift-core", version = "0.4.1" }
+drift-core = { path = "../drift-core", version = "0.4.2" }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -303,7 +303,7 @@ DeepSeek vs default Anthropic Opus on a real handoff: roughly **30×
 cheaper at similar narrative quality**. Switch with one line in
 `.prompts/config.toml` — see [Configuration](#configuration).
 
-![drift multi-LLM cost comparison](docs/demo/v040-multi-llm-comparison.gif)
+![drift multi-LLM cost comparison](docs/demo/v042-multi-llm-comparison.gif)
 
 Source: [`docs/V030-V040-SMOKE.md`](docs/V030-V040-SMOKE.md) +
 [`docs/V042-BUGFIX-VERIFY.md`](docs/V042-BUGFIX-VERIFY.md).

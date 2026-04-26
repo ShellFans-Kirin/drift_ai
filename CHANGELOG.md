@@ -6,6 +6,84 @@ All notable changes to drift_ai are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] — 2026-04-26
+
+Bug-fix patch on top of v0.4.1, plus README launch polish before Show HN.
+The compaction / attribution / connector code paths are unchanged from
+v0.4.1; the two fixes below close real holes in the multi-LLM headline
+feature, and the README is a content rewrite (no schema or API change).
+
+### Fixed
+
+- **`[handoff]` config overlay was silently ignored** in
+  `crates/drift-core/src/config.rs::load`. The project-config overlay
+  copied `attribution / connectors / compaction / sync` from
+  `.prompts/config.toml` but skipped `handoff`. Result: setting
+  `[handoff].provider = "deepseek"` (or `"openai"`, `"gemini"`,
+  `"ollama"`, any custom OpenAI-compatible name) had **no effect** —
+  `drift handoff` always called the global default Anthropic provider.
+  Fixed by adding `cfg.handoff = proj.handoff` to the overlay.
+  Regression test: `config::tests::handoff_config_project_overlay_is_applied`.
+
+- **`OpenAICompatibleProvider::complete_async` reported cost = $0** in
+  `crates/drift-core/src/compaction/openai_compat.rs`. The handoff code
+  path delegated to the inner `OpenAIProvider` but never re-stamped the
+  returned cost with the user-supplied per-1M-token rates, so every
+  DeepSeek / Groq / Mistral / Together AI / vLLM / LM Studio handoff
+  brief reported `cost=$0.0000`. The `compact_async` path was already
+  correct. Fixed by re-stamping `completion.cost_usd` after the inner
+  call. Regression test:
+  `compaction::openai_compat::tests::handoff_complete_re_stamps_user_pricing`.
+
+### Changed (README launch polish)
+
+- **Tagline shortened** (4 lines → 2 lines) for sharper GitHub front-page pull.
+- **`Why drift exists` section** rewritten — 6 wandering bullets condensed
+  to 3 (mid-task agent switch / forgetting your own work / onboarding
+  teammates), and the first-bullet English fixed (the v0.4.0 version had
+  a duplicate "you start a feature" clause).
+- **New `Cost across providers (v0.4 multi-LLM)` section** with the same
+  real-API smoke table that's in `docs/V030-V040-SMOKE.md`. Now visible
+  on the README front page.
+- **Demo GIF distribution**: hero shows GIF 1 (bidirectional handoff)
+  only; GIF 2 (multi-LLM cost comparison, **re-recorded with v0.4.2** so
+  the DeepSeek cost is non-zero) lives inside the new cost section; GIF
+  3 (Cursor → Claude Code) lives inside the pain-points section it
+  illustrates.
+- **Privacy section**: clarified `db_in_git = true` default + linked to
+  Configuration; "wait for v0.2" → "wait for the redaction pass" (the
+  redaction pass isn't tied to a specific version any more).
+- **Quickstart quote escape bug** (`""x@y""` → `"x@y"`) fixed.
+- **Version-numbering unified**: removed stale `(v0.2)` headers and
+  `v0.2 will add ...` claims; bumped "Honest limitations" header to
+  `(v0.4.2)`; install URL bumped to `drift-v0.4.2`.
+- **Translations** (`README.ja.md` / `README.zh-Hans.md` / `README.zh-Hant.md`):
+  tagline rewritten, Privacy clarification ported, broken
+  `v020-handoff.gif` reference replaced with the real
+  `v040-handoff-bidirectional.gif`, install URL bumped. The `Why drift`
+  6→3 condensation and the multi-LLM cost section are English-only for
+  v0.4.2; translations will catch up in a follow-up i18n sync.
+
+### Verification
+
+- `docs/V042-BUGFIX-VERIFY.md` — both regression tests + a real-API
+  4-provider smoke (Anthropic Haiku / OpenAI gpt-4o-mini / Gemini
+  2.5-flash / DeepSeek), all reporting non-zero costs and the correct
+  model name.
+- `docs/demo/v042-multi-llm-comparison.gif` — re-recorded with the
+  v0.4.2 binary so the DeepSeek cost is non-zero ($0.0005 on the
+  fixture session).
+
+### Stability guarantees carried from v0.1 / v0.2
+
+- `events.db` schema unchanged.
+- MCP tool list unchanged.
+- `SessionConnector` trait signature unchanged.
+- `CompactionProvider` trait unchanged.
+- `CompactionError` enum unchanged.
+
+Upgrading from v0.4.x is a binary swap. No migration.
+
 ## [0.4.1] — 2026-04-26
 
 Doc-only patch on top of v0.4.0. The compaction / attribution / connector
