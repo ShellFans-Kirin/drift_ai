@@ -5,14 +5,10 @@
 [![crates.io](https://img.shields.io/crates/v/drift-ai.svg)](https://crates.io/crates/drift-ai)
 [![CI](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml/badge.svg)](https://github.com/ShellFans-Kirin/drift_ai/actions/workflows/ci.yml)
 
-> Vendor-neutral handoff for AI coding tasks.
-> Works with Claude, GPT, Gemini, DeepSeek, and any local LLM.
-> Reads sessions from Claude Code, Codex, Cursor, and Aider.
-> Local-first.
+> Vendor-neutral handoff for AI coding tasks — between Claude, GPT, Gemini, DeepSeek, local LLMs.
+> Reads from Claude Code, Codex, Cursor, Aider. Local-first.
 
 ![drift handoff bidirectional](docs/demo/v040-handoff-bidirectional.gif)
-![drift multi-LLM cost comparison](docs/demo/v040-multi-llm-comparison.gif)
-![drift Cursor → Claude Code handoff](docs/demo/v040-cursor-handoff.gif)
 
 **The problem**: Your AI coding agent stalled — refused, rate-limited, or
 just got dumb. Now you need to transfer 30 minutes of context to another
@@ -35,13 +31,13 @@ The brief lists what you've decided, what you tried and rejected, what's
 open, and where to resume. Paste it into the next agent and they pick up
 mid-task without you re-explaining.
 
-`drift` is built on top of a v0.1 attribution engine that watches the
+`drift` is built on top of an attribution engine that watches the
 local session logs of your AI coding agents (Claude Code, Codex,
-Aider...), LLM-compacts each completed session, stores the result in
-`.prompts/` inside your git repo, and binds each session to its matching
-commit via `git notes`. The handoff feature is the new (v0.2) wedge; the
-attribution engine is the (still-supported) `drift blame` / `drift log`
-side that powers it.
+Cursor, Aider...), LLM-compacts each completed session, stores the
+result in `.prompts/` inside your git repo, and binds each session to
+its matching commit via `git notes`. The handoff feature is the
+cross-agent task-transfer wedge; the attribution engine powers
+`drift blame` / `drift log` underneath.
 
 After installation, `drift log` still shows multi-agent attribution per
 commit:
@@ -59,24 +55,20 @@ See [`docs/VISION.md`](docs/VISION.md) for the broader thesis.
 ## Why drift exists
 
 AI coding stopped being a single-agent workflow. A real session today
-looks more like this:
+involves:
 
-- You start a feature in Claude Code, you start developing a feature,
-  but encounter rate limits or a full context window, or then you find
-  that LLMs have **become stupid**, forcing you to quit halfway through.
-- You move to Codex (or Aider, or another model), but the new agent
-  doesn't know which approaches you already tried, which decisions are
-  settled, and which were *deliberately* rejected.
-- You paste a chat transcript at the new agent. It's noisy, the agent
-  re-litigates settled questions, and you spend ten minutes
-  re-explaining what you wanted instead of moving forward.
-- A week later you review the commit and can't tell which lines came
-  from which agent, which were human edits on top of an AI suggestion,
-  or *why* the code took the shape it took.
-- Your teammate clones the repo and sees the code, but none of the
-  reasoning that produced it — that history lived in someone else's
-  Claude / Codex chat history, on someone else's laptop, and is now
-  effectively gone.
+- **Switching agents mid-task**: Claude rate-limits, Codex stalls, the
+  model goes off the rails — refusing tasks, hallucinating tool calls,
+  or producing low-quality output. You move to another agent and burn
+  10 minutes re-explaining what you'd already decided and rejected.
+- **Forgetting your own work**: a week later, `git blame` tells you
+  which line *you* wrote, but not which prompt produced it, which
+  approach was settled, or why.
+- **Onboarding teammates with zero context**: they see the code, but
+  the reasoning lived in someone else's chat history on someone else's
+  laptop.
+
+![drift Cursor session → Claude Code handoff](docs/demo/v040-cursor-handoff.gif)
 
 `drift` turns that disposable AI trail into durable project memory:
 
@@ -125,7 +117,7 @@ cargo install drift-ai
 **Pre-built binaries** (GitHub Releases):
 
 ```bash
-curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.4.0-$(uname -m)-unknown-linux-gnu.tar.gz \
+curl -sSfL https://github.com/ShellFans-Kirin/drift_ai/releases/latest/download/drift-v0.4.2-$(uname -m)-unknown-linux-gnu.tar.gz \
   | tar xz -C /tmp && sudo mv /tmp/drift /usr/local/bin/drift
 drift --version
 ```
@@ -150,13 +142,18 @@ Two knobs today:
    keep `events.db` local only.
 2. Review `.prompts/sessions/` before `git add`.
 
-`v0.2` will add a regex-based redaction pass. For full coverage today,
-pair `drift` with [gitleaks](https://github.com/gitleaks/gitleaks) or
+By default, `db_in_git = true` (teams share blame via the repo). For
+solo repos or sensitive content, flip it to `false` — see
+[Configuration](#configuration).
+
+A future release will add a regex-based redaction pass. For full
+coverage today, pair `drift` with
+[gitleaks](https://github.com/gitleaks/gitleaks) or
 [trufflehog](https://github.com/trufflesecurity/trufflehog) as a
 pre-commit hook.
 
-> **If you routinely paste secrets into AI sessions, wait for `v0.2`
-> before enabling `drift` on shared repos.**
+> **If you routinely paste secrets into AI sessions, wait for the
+> redaction pass before enabling `drift` on shared repos.**
 
 The first time you run `drift capture`, you'll see a one-shot notice
 restating the above; press Enter to acknowledge. Set
@@ -173,7 +170,7 @@ Six commands, zero config:
 cd your-git-repo
 drift init                                          # scaffold .prompts/
 drift capture                                       # pull sessions from ~/.claude + ~/.codex
-drift handoff --branch feature/oauth --to claude   # NEW in v0.2 — task transfer
+drift handoff --branch feature/oauth --to claude   # task transfer (since v0.2)
 drift blame src/foo.rs                              # reverse lookup: who wrote what
 drift trace <session-id>                            # forward lookup: session → events
 drift install-hook                                  # auto-run after each commit
@@ -187,11 +184,11 @@ Verified from `/tmp` with zero prior state:
 
 ```bash
 rm -rf /tmp/drift-smoke && mkdir -p /tmp/drift-smoke && cd /tmp/drift-smoke
-git init -q && git config user.email ""x@y"" && git config user.name x
+git init -q && git config user.email "x@y" && git config user.name x
 drift init && drift capture && drift list
 ```
 
-## Handoff — cross-agent task transfer (v0.2)
+## Handoff — cross-agent task transfer
 
 `drift handoff` reads your local `events.db` (built up by `drift capture`
 or `drift watch`), filters down to the sessions in the scope you ask
@@ -290,6 +287,27 @@ Switching from Opus to Haiku on the same 10-session corpus takes
 compaction from **$2.91 → $0.15** — a ~19× reduction at the cost of
 slightly terser summaries.
 
+## Cost across providers (v0.4 multi-LLM)
+
+Same 4-turn fixture session, different provider for the handoff brief:
+
+| Provider | Model | Cost USD | Latency |
+|---|---|---:|---:|
+| Anthropic | claude-haiku-4-5 | $0.0028 | 2281 ms |
+| OpenAI | gpt-4o-mini | $0.0003 | 3201 ms |
+| Gemini | gemini-2.5-flash | $0.0003 | 1505 ms |
+| DeepSeek (compat) | deepseek-chat | $0.0005 | 1906 ms |
+| Ollama | local model | $0 | varies |
+
+DeepSeek vs default Anthropic Opus on a real handoff: roughly **30×
+cheaper at similar narrative quality**. Switch with one line in
+`.prompts/config.toml` — see [Configuration](#configuration).
+
+![drift multi-LLM cost comparison](docs/demo/v040-multi-llm-comparison.gif)
+
+Source: [`docs/V030-V040-SMOKE.md`](docs/V030-V040-SMOKE.md) +
+[`docs/V042-BUGFIX-VERIFY.md`](docs/V042-BUGFIX-VERIFY.md).
+
 ## AI-native blame
 
 `drift blame` is the reverse lookup. Given a line of code, it returns
@@ -375,7 +393,7 @@ run for a real one — nothing else in the pipeline changes.
 How drift compares to Cursor / Copilot history, Cody, and `git blame`
 itself: [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
-## Honest limitations (v0.4.0)
+## Honest limitations (v0.4.2)
 
 - Human-edit detection is SHA-ladder only — we do not claim authorship,
   the `human` slug means "no AI session produced this". See VISION.md.
@@ -388,7 +406,7 @@ itself: [`docs/COMPARISON.md`](docs/COMPARISON.md).
   <https://www.anthropic.com/pricing> before treating as invoice-ready.
 - Context-window truncation is deterministic head+tail elision
   (Strategy 1); hierarchical summarization (Strategy 2) is stubbed
-  behind a feature flag for v0.2.
+  behind a feature flag for a future release.
 
 ## About
 
