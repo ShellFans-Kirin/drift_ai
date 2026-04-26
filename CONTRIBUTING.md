@@ -33,34 +33,76 @@ trait SessionConnector {
 }
 ```
 
-The worked example is Aider
-([`crates/drift-connectors/src/aider.rs`](crates/drift-connectors/src/aider.rs)).
-The steps to turn the stub into a real connector:
+The two worked examples are Aider
+([`crates/drift-connectors/src/aider.rs`](crates/drift-connectors/src/aider.rs))
+and Cursor
+([`crates/drift-connectors/src/cursor.rs`](crates/drift-connectors/src/cursor.rs)).
+Aider parses plain markdown; Cursor reads SQLite. Pick the closer match for
+your target agent.
 
-1. Find the on-disk session layout. For Aider, sessions live under
-   `~/.aider/` with a JSON-lines history. Capture a real sample first
-   (`~/.aider/chat-history.jsonl` in most installs).
-2. Implement `discover()` — walk the dir, return `.jsonl` paths.
-3. Implement `parse()` — read the file, produce a `NormalizedSession`:
-   - `session_id`: whatever the agent calls it (file stem is fine)
-   - `agent_slug`: `AgentSlug::Aider`
-   - `turns[]`: one per message; put tool calls into `Turn::tool_calls`
-   - timestamps, model, working_dir where available
-4. Implement `extract_code_events()` — walk the turns and emit
-   `CodeEventDraft`s for every file mutation. Reuse
-   `drift_core::shell_lexer` for shell-command intent detection; it
-   handles `mv`, `cp`, `rm`, redirects, `sed -i`, best-effort
-   `python -c open()`.
-5. Add the feature flag in `crates/drift-connectors/Cargo.toml`:
+The general steps:
+
+1. **Find the on-disk session layout.** Capture a real sample first.
+   Examples in this repo:
+   - Claude Code: `~/.claude/projects/<workspace>/<session>.jsonl`
+   - Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`
+   - Cursor: per-workspace `state.vscdb` SQLite (key `composerData:*`)
+   - Aider: `<repo>/.aider.chat.history.md` (markdown with `> ` user prefix
+     and ```diff fences)
+
+2. **Implement `discover()`** — walk the platform-default directory and
+   emit `SessionRef`s.
+
+3. **Implement `parse()`** — read one source file / DB row, produce a
+   [`NormalizedSession`](crates/drift-core/src/model.rs):
+   - `session_id`: stable id from the agent (file stem, composer id, etc).
+     If the agent has no stable id (e.g. Aider markdown), synthesise one
+     from `sha256(path + start_timestamp)`.
+   - `agent_slug`: a new variant of [`AgentSlug`](crates/drift-core/src/model.rs).
+     Add the variant + the slug string in `as_str()` / `parse()` first.
+   - `turns[]`: one per message. Each user / assistant exchange = one Turn.
+     Put tool invocations into `Turn::tool_calls`, results into
+     `Turn::tool_results`.
+   - Timestamps, model, working_dir where available.
+
+4. **Implement `extract_code_events()`** — walk the turns and emit a
+   [`CodeEventDraft`](crates/drift-core/src/attribution.rs) for every
+   file mutation. Re-use `drift_core::shell_lexer` for shell-command
+   intent detection (`mv`, `cp`, `rm`, redirects, `sed -i`, best-effort
+   `python -c open()`).
+
+   For agents whose session format **doesn't** carry a tool-call /
+   tool-result structure (Aider's markdown is the canonical example),
+   default `rejected = false` and rely on the SHA-256 ladder in
+   `drift_core::attribution` to catch divergence. Document this with a
+   `[BEST-EFFORT]` comment so future readers know what's approximate.
+
+5. **Add the feature flag** in `crates/drift-connectors/Cargo.toml`:
    ```toml
    [features]
-   aider = []
+   default = ["claude-code", "codex", "cursor", "aider", "your-agent"]
+   your-agent = []
    ```
-6. Wire the connector into `default_connectors()` in `lib.rs` under
+   Use `optional = true` on the dependency line if your agent's parser
+   needs a heavyweight dep (rusqlite, etc) you don't want pulled in by
+   default.
+
+6. **Wire the connector** into `default_connectors()` in `lib.rs` under
    the feature gate.
-7. Drop 3 fixture `.jsonl`s into `tests/fixtures/aider/` (plain chat,
-   edit cycle, failed-retry) and add a `connector_aider.rs`
-   integration test.
+
+7. **Add `--to your-agent`** to [`TargetAgent`](crates/drift-core/src/handoff.rs)
+   if the agent is something a `drift handoff` brief can be pasted into.
+   Add a footer style in `render_brief()` matching the agent's UX.
+
+8. **Add tests with synthetic fixtures.** Don't commit real user data.
+   The Cursor connector's `build_fixture_db` and Aider's inline
+   `FIXTURE` constant show two patterns. Aim for ≥5 unit tests covering
+   discover / parse / extract / edge cases / op inference.
+
+9. **Add a real-API smoke** if your agent has a remote API (most don't —
+   most write local files). Use the `#[ignore]` + env-gate pattern from
+   `crates/drift-core/tests/v030_real_smoke.rs` so CI doesn't try to hit
+   real endpoints.
 
 ## Attribution rules
 
