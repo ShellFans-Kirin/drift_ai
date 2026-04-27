@@ -10,6 +10,61 @@
 
 ![drift handoff bidirectional](docs/demo/v040-handoff-bidirectional.gif)
 
+---
+
+## 🧠 AI coding breaks when you switch agents
+
+Claude stalls. Codex refuses. Cursor goes off-track.
+
+You spend **30 minutes re-explaining context** you already solved.
+
+- What decisions were made?
+- What approaches already failed?
+- Which file you were editing?
+
+👉 None of that survives a session.
+
+---
+
+## ❌ Git tracks code — not AI reasoning
+
+Git shows *what changed*.
+
+It does NOT tell you:
+
+- why it was written
+- what was rejected
+- which agent produced it
+- what context led here
+
+That reasoning disappears.
+
+---
+
+## ✅ Drift solves this
+
+> Drift is git blame for AI decisions
+
+---
+
+## ⚡ Before / After
+
+### Before
+
+- Copy-paste chat history
+- Re-explain everything
+- Lose decisions
+- AI repeats mistakes
+
+### After
+
+- Structured markdown brief
+- Decisions + rejected paths included
+- Resume instantly
+- No re-explaining
+
+---
+
 **The problem**: Your AI coding agent stalled — refused, rate-limited, or
 just got dumb. Now you need to transfer 30 minutes of context to another
 agent. Re-pasting a chat history doesn't work; the new agent doesn't
